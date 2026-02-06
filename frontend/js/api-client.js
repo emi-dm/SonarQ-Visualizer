@@ -171,3 +171,34 @@ const metricsAPI = {
     });
   }
 };
+
+/**
+ * Generic API client for GET/POST/PUT/DELETE operations
+ */
+const api = {
+  async get(endpoint, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const suffix = query ? `?${query}` : '';
+    return apiFetch(`${endpoint}${suffix}`);
+  },
+  
+  async post(endpoint, data = {}) {
+    return apiFetch(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  
+  async put(endpoint, data = {}) {
+    return apiFetch(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  
+  async delete(endpoint) {
+    return apiFetch(endpoint, {
+      method: 'DELETE'
+    });
+  }
+};

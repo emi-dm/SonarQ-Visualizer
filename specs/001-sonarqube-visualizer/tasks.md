@@ -141,27 +141,27 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 ### Tests for User Story 3 ✅
 
-- [ ] T062 [P] [US3] Property-based test for dashboard aggregation calculations in backend/tests/property/test_dashboard_aggregation.py using Hypothesis (FR-029 formulas)
-- [ ] T063 [P] [US3] Integration test for dashboard endpoint in backend/tests/integration/test_dashboard_api.py with multiple projects and aggregation verification
-- [ ] T064 [P] [US3] Integration test for preferences management in backend/tests/integration/test_preferences_api.py
+- [x] T062 [P] [US3] Property-based test for dashboard aggregation calculations in backend/tests/property/test_dashboard_aggregation.py using Hypothesis (FR-029 formulas)
+- [x] T063 [P] [US3] Integration test for dashboard endpoint in backend/tests/integration/test_dashboard_api.py with multiple projects and aggregation verification
+- [x] T064 [P] [US3] Integration test for preferences management in backend/tests/integration/test_preferences_api.py
 
 ### Implementation for User Story 3
 
-- [ ] T065 [P] [US3] Create UserPreferences SQLAlchemy model in backend/src/models/user_preferences.py with key-value JSON storage
-- [ ] T066 [P] [US3] Create preferences repository in backend/src/db/repositories/preferences_repository.py with get/set operations
-- [ ] T067 [US3] Implement dashboard aggregation service in backend/src/services/dashboard_service.py with multi-project statistics calculation per FR-029
-- [ ] T068 [US3] Implement preferences service in backend/src/services/preferences_service.py with predefined keys validation
-- [ ] T069 [US3] Create dashboard API router in backend/src/api/dashboard.py with GET /dashboard supporting connection_id and project_ids filters
-- [ ] T070 [US3] Create preferences API router in backend/src/api/preferences.py with GET /preferences, PUT /preferences
-- [ ] T071 [US3] Add Chart.js library to frontend/index.html with lazy loading strategy per research.md
-- [ ] T072 [US3] Implement chart rendering module in frontend/js/charts.js with functions for line charts (trends), pie charts (severity distribution), gauge charts (coverage with color thresholds: red <50%, yellow 50-80%, green >80% per research.md)
-- [ ] T073 [US3] Create multi-project dashboard UI in frontend/index.html with project cards, aggregate statistics section, and comparison view
-- [ ] T074 [US3] Implement dashboard data fetching and rendering in frontend/js/app.js with filter controls (connection, time range, metrics selection)
-- [ ] T074b [US3] Implement filtering capabilities in frontend/js/app.js for metric categories (bugs/vulnerabilities/code smells/coverage/duplications) and time range selection per FR-014
-- [ ] T075 [US3] Add chart interactivity in frontend/js/charts.js with tooltips, click-to-drill-down from dashboard to project detail
-- [ ] T076 [US3] Implement visualization preferences in frontend/js/app.js with localStorage persistence for chart types, themes, time ranges
-- [ ] T077 [US3] Create responsive dashboard layout in frontend/css/styles.css with mobile (stacked), tablet (2-column), desktop (3-column) breakpoints per research.md
-- [ ] T078 [US3] Style charts and visualizations in frontend/css/styles.css with consistent color scheme and accessibility considerations
+- [x] T065 [P] [US3] Create UserPreferences SQLAlchemy model in backend/src/models/user_preferences.py with key-value JSON storage
+- [x] T066 [P] [US3] Create preferences repository in backend/src/db/repositories/preferences_repository.py with get/set operations
+- [x] T067 [US3] Implement dashboard aggregation service in backend/src/services/dashboard_service.py with multi-project statistics calculation per FR-029
+- [x] T068 [US3] Implement preferences service in backend/src/services/preferences_service.py with predefined keys validation
+- [x] T069 [US3] Create dashboard API router in backend/src/api/dashboard.py with GET /dashboard supporting connection_id and project_ids filters
+- [x] T070 [US3] Create preferences API router in backend/src/api/preferences.py with GET /preferences, PUT /preferences
+- [x] T071 [US3] Add Chart.js library to frontend/index.html with lazy loading strategy per research.md
+- [x] T072 [US3] Implement chart rendering module in frontend/js/charts.js with functions for line charts (trends), pie charts (severity distribution), gauge charts (coverage with color thresholds: red <50%, yellow 50-80%, green >80% per research.md)
+- [x] T073 [US3] Create multi-project dashboard UI in frontend/index.html with project cards, aggregate statistics section, and comparison view
+- [x] T074 [US3] Implement dashboard data fetching and rendering in frontend/js/app.js with filter controls (connection, time range, metrics selection)
+- [x] T074b [US3] Implement filtering capabilities in frontend/js/app.js for metric categories (bugs/vulnerabilities/code smells/coverage/duplications) and time range selection per FR-014
+- [x] T075 [US3] Add chart interactivity in frontend/js/charts.js with tooltips, click-to-drill-down from dashboard to project detail
+- [x] T076 [US3] Implement visualization preferences in frontend/js/app.js with localStorage persistence for chart types, themes, time ranges
+- [x] T077 [US3] Create responsive dashboard layout in frontend/css/styles.css with mobile (stacked), tablet (2-column), desktop (3-column) breakpoints per research.md
+- [x] T078 [US3] Style charts and visualizations in frontend/css/styles.css with consistent color scheme and accessibility considerations
 
 **Checkpoint**: All user stories should now be independently functional - users can connect, fetch metrics, and visualize data with interactive charts
 

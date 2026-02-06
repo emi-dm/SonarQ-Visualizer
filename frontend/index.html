@@ -14,6 +14,9 @@
         <div class="container">
             <h1 class="logo">SonarQ Visualizer</h1>
             <nav class="nav">
+                <button id="nav-connections-btn" class="btn btn-text">Connections</button>
+                <button id="nav-projects-btn" class="btn btn-text">Projects</button>
+                <button id="nav-dashboard-btn" class="btn btn-text">Dashboard</button>
                 <button id="add-connection-btn" class="btn btn-primary">Add Connection</button>
             </nav>
         </div>
@@ -72,12 +75,83 @@
 
             <!-- Dashboard Section -->
             <section id="dashboard-section" class="section hidden">
-                <h2>Dashboard</h2>
-                <div id="dashboard-aggregates" class="dashboard-aggregates">
-                    <!-- Aggregate stats will be inserted here -->
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                    <div class="dashboard-controls">
+                        <select id="dashboard-connection-filter" class="input">
+                            <option value="">All Connections</option>
+                        </select>
+                        <select id="dashboard-time-range" class="input">
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d" selected>Last 30 Days</option>
+                            <option value="90d">Last 90 Days</option>
+                            <option value="365d">Last Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button id="refresh-dashboard-btn" class="btn btn-secondary">Refresh</button>
+                    </div>
                 </div>
+                
+                <!-- Aggregate Statistics -->
+                <div id="dashboard-aggregates" class="dashboard-aggregates">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Projects</div>
+                        <div class="stat-value" id="stat-total-projects">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Bugs</div>
+                        <div class="stat-value" id="stat-total-bugs">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Vulnerabilities</div>
+                        <div class="stat-value" id="stat-total-vulnerabilities">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Average Coverage</div>
+                        <div class="stat-value" id="stat-avg-coverage">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Quality Gate Pass Rate</div>
+                        <div class="stat-value" id="stat-qg-pass-rate">-</div>
+                    </div>
+                </div>
+                
+                <!-- Filter Controls -->
+                <div class="dashboard-filters">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filter-bugs" checked> Bugs
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filter-vulnerabilities" checked> Vulnerabilities
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filter-code-smells" checked> Code Smells
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filter-coverage" checked> Coverage
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filter-duplications" checked> Duplications
+                    </label>
+                </div>
+                
+                <!-- Charts Container -->
                 <div id="dashboard-charts" class="charts-container">
-                    <!-- Dashboard charts will be inserted here -->
+                    <div class="chart-card">
+                        <canvas id="dashboard-comparison-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <canvas id="dashboard-coverage-chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <canvas id="dashboard-quality-gate-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Project Cards Grid -->
+                <h3>Projects Overview</h3>
+                <div id="dashboard-projects-grid" class="dashboard-projects-grid">
+                    <!-- Project cards will be inserted here -->
                 </div>
             </section>
         </div>

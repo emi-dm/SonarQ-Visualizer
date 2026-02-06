@@ -28,6 +28,8 @@ async function initializeApp() {
   // Setup modal event listeners
   setupModalListeners();
   setupProjectListeners();
+  setupNavigationListeners();
+  setupDashboardListeners();
   
   // Load connections
   await loadConnections();
@@ -539,10 +541,12 @@ function showSection(section) {
   const connectionsSection = document.getElementById('connections-section');
   const projectsSection = document.getElementById('projects-section');
   const projectDetailSection = document.getElementById('project-detail-section');
+  const dashboardSection = document.getElementById('dashboard-section');
 
   connectionsSection.classList.add('hidden');
   projectsSection.classList.add('hidden');
   projectDetailSection.classList.add('hidden');
+  if (dashboardSection) dashboardSection.classList.add('hidden');
 
   if (section === 'connections') {
     connectionsSection.classList.remove('hidden');
@@ -550,6 +554,8 @@ function showSection(section) {
     projectsSection.classList.remove('hidden');
   } else if (section === 'project-detail') {
     projectDetailSection.classList.remove('hidden');
+  } else if (section === 'dashboard') {
+    if (dashboardSection) dashboardSection.classList.remove('hidden');
   }
 }
 
@@ -651,3 +657,343 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+/**
+ * Setup navigation listeners
+ */
+function setupNavigationListeners() {
+  const navConnectionsBtn = document.getElementById('nav-connections-btn');
+  const navProjectsBtn = document.getElementById('nav-projects-btn');
+  const navDashboardBtn = document.getElementById('nav-dashboard-btn');
+  
+  if (navConnectionsBtn) {
+    navConnectionsBtn.addEventListener('click', () => showSection('connections'));
+  }
+  
+  if (navProjectsBtn) {
+    navProjectsBtn.addEventListener('click', () => {
+      if (appState.currentConnection) {
+        showSection('projects');
+        loadProjects(appState.currentConnection.id);
+      } else {
+        showToast('Please select a connection first', 'warning');
+      }
+    });
+  }
+  
+  if (navDashboardBtn) {
+    navDashboardBtn.addEventListener('click', async () => {
+      showSection('dashboard');
+      await loadDashboard();
+    });
+  }
+}
+
+/**
+ * Setup dashboard event listeners
+ */
+function setupDashboardListeners() {
+  const refreshDashboardBtn = document.getElementById('refresh-dashboard-btn');
+  const connectionFilter = document.getElementById('dashboard-connection-filter');
+  const timeRangeFilter = document.getElementById('dashboard-time-range');
+  const filterCheckboxes = [
+    'filter-bugs',
+    'filter-vulnerabilities',
+    'filter-code-smells',
+    'filter-coverage',
+    'filter-duplications'
+  ];
+  
+  if (refreshDashboardBtn) {
+    refreshDashboardBtn.addEventListener('click', async () => {
+      await loadDashboard();
+    });
+  }
+  
+  if (connectionFilter) {
+    connectionFilter.addEventListener('change', async () => {
+      await loadDashboard();
+    });
+  }
+  
+  if (timeRangeFilter) {
+    timeRangeFilter.addEventListener('change', async () => {
+      await loadDashboard();
+    });
+  }
+  
+  // Setup filter checkboxes
+  filterCheckboxes.forEach(id => {
+    const checkbox = document.getElementById(id);
+    if (checkbox) {
+      checkbox.addEventListener('change', async () => {
+        await loadDashboard();
+      });
+    }
+  });
+}
+
+/**
+ * Load dashboard data and render visualizations
+ */
+async function loadDashboard() {
+  showLoading();
+  
+  try {
+    // Build query parameters
+    const connectionFilter = document.getElementById('dashboard-connection-filter');
+    const params = {};
+    
+    if (connectionFilter && connectionFilter.value) {
+      params.connection_id = connectionFilter.value;
+    }
+    
+    // Fetch dashboard data
+    const dashboardData = await api.get('/dashboard', params);
+    
+    // Render aggregate statistics
+    renderDashboardAggregates(dashboardData.aggregates);
+    
+    // Render charts
+    renderDashboardCharts(dashboardData.projects);
+    
+    // Render project cards
+    renderDashboardProjectCards(dashboardData.projects);
+    
+    showToast('Dashboard loaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error loading dashboard:', error);
+    showToast('Failed to load dashboard data', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+/**
+ * Render dashboard aggregate statistics
+ */
+function renderDashboardAggregates(aggregates) {
+  document.getElementById('stat-total-projects').textContent = aggregates.total_projects || '0';
+  document.getElementById('stat-total-bugs').textContent = aggregates.total_bugs || '0';
+  document.getElementById('stat-total-vulnerabilities').textContent = aggregates.total_vulnerabilities || '0';
+  
+  const avgCoverage = aggregates.avg_coverage !== null && aggregates.avg_coverage !== undefined
+    ? `${aggregates.avg_coverage.toFixed(1)}%`
+    : 'N/A';
+  document.getElementById('stat-avg-coverage').textContent = avgCoverage;
+  
+  const qgPassRate = aggregates.quality_gate_pass_rate !== null && aggregates.quality_gate_pass_rate !== undefined
+    ? `${aggregates.quality_gate_pass_rate.toFixed(1)}%`
+    : 'N/A';
+  document.getElementById('stat-qg-pass-rate').textContent = qgPassRate;
+}
+
+/**
+ * Render dashboard charts
+ */
+function renderDashboardCharts(projects) {
+  if (!projects || projects.length === 0) {
+    return;
+  }
+  
+  // Wait for Chart.js to be available
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js not loaded yet, retrying...');
+    setTimeout(() => renderDashboardCharts(projects), 100);
+    return;
+  }
+  
+  // Prepare data for charts
+  const projectsWithMetrics = projects
+    .filter(p => p.latest_metrics)
+    .map(p => ({
+      name: p.project_name,
+      project_name: p.project_name,
+      bugs_count: p.latest_metrics.bugs_count,
+      vulnerabilities_count: p.latest_metrics.vulnerabilities_count,
+      code_smells_count: p.latest_metrics.code_smells_count,
+      coverage_pct: p.latest_metrics.coverage_pct,
+      duplications_pct: p.latest_metrics.duplications_pct,
+      quality_gate_status: p.latest_metrics.quality_gate_status
+    }));
+  
+  // Render project comparison chart
+  if (typeof renderProjectComparisonChart === 'function') {
+    renderProjectComparisonChart('dashboard-comparison-chart', projectsWithMetrics, {
+      title: 'Project Metrics Comparison'
+    });
+  }
+  
+  // Render coverage chart (showing coverage for each project)
+  if (typeof renderProjectComparisonChart === 'function') {
+    const coverageData = projectsWithMetrics.map(p => ({
+      name: p.name,
+      project_name: p.name,
+      coverage_pct: p.coverage_pct,
+      bugs_count: 0,
+      vulnerabilities_count: 0
+    }));
+    
+    renderProjectComparisonChart('dashboard-coverage-chart', coverageData, {
+      title: 'Code Coverage by Project'
+    });
+  }
+  
+  // Render quality gate chart (pie chart of statuses)
+  if (typeof renderSeverityPieChart === 'function') {
+    const qgCounts = {
+      'OK': 0,
+      'WARN': 0,
+      'ERROR': 0
+    };
+    
+    projectsWithMetrics.forEach(p => {
+      const status = p.quality_gate_status || 'ERROR';
+      if (qgCounts.hasOwnProperty(status)) {
+        qgCounts[status]++;
+      }
+    });
+    
+    renderSeverityPieChart('dashboard-quality-gate-chart', qgCounts, {
+      title: 'Quality Gate Status Distribution'
+    });
+  }
+}
+
+/**
+ * Render dashboard project cards
+ */
+function renderDashboardProjectCards(projects) {
+  const container = document.getElementById('dashboard-projects-grid');
+  
+  if (!projects || projects.length === 0) {
+    container.innerHTML = '<p class="text-secondary">No projects available</p>';
+    return;
+  }
+  
+  container.innerHTML = projects
+    .map(project => {
+      const metrics = project.latest_metrics;
+      
+      if (!metrics) {
+        return `
+          <div class="project-card">
+            <h4>${escapeHtml(project.project_name)}</h4>
+            <p class="text-secondary">No metrics available</p>
+          </div>
+        `;
+      }
+      
+      const qgClass = metrics.quality_gate_status === 'OK' ? 'badge-success' :
+                      metrics.quality_gate_status === 'WARN' ? 'badge-warning' : 'badge-error';
+      
+      const stalenessHours = project.staleness_hours || 0;
+      const stalenessClass = stalenessHours > 24 ? 'text-warning' : 'text-secondary';
+      
+      return `
+        <div class="project-card" data-project-id="${project.project_id}">
+          <div class="project-card-header">
+            <h4>${escapeHtml(project.project_name)}</h4>
+            <span class="badge ${qgClass}">${metrics.quality_gate_status}</span>
+          </div>
+          
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <span class="metric-label">Bugs</span>
+              <span class="metric-value">${metrics.bugs_count || 0}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Vulnerabilities</span>
+              <span class="metric-value">${metrics.vulnerabilities_count || 0}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Code Smells</span>
+              <span class="metric-value">${metrics.code_smells_count || 0}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Coverage</span>
+              <span class="metric-value">
+                ${metrics.coverage_pct !== null ? metrics.coverage_pct.toFixed(1) + '%' : 'N/A'}
+              </span>
+            </div>
+          </div>
+          
+          <div class="project-card-footer">
+            <span class="${stalenessClass} text-small">
+              Updated ${formatRelativeTime(stalenessHours)} ago
+            </span>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+    
+  // Add click listeners to project cards
+  container.querySelectorAll('.project-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const projectId = parseInt(card.dataset.projectId);
+      const project = appState.projects.find(p => p.id === projectId);
+      
+      if (project) {
+        appState.currentProject = project;
+        showSection('project-detail');
+        loadProjectMetrics(projectId);
+      }
+    });
+  });
+}
+
+/**
+ * Format relative time from hours
+ */
+function formatRelativeTime(hours) {
+  if (hours < 1) {
+    return `${Math.floor(hours * 60)} min`;
+  } else if (hours < 24) {
+    return `${Math.floor(hours)} hour${hours >= 2 ? 's' : ''}`;
+  } else {
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? 's' : ''}`;
+  }
+}
+
+/**
+ * Load preferences from API
+ */
+async function loadPreferences() {
+  try {
+    const preferences = await api.get('/preferences');
+    return preferences || {};
+  } catch (error) {
+    console.error('Error loading preferences:', error);
+    return getDefaultPreferences();
+  }
+}
+
+/**
+ * Save preferences to API
+ */
+async function savePreferences(preferences) {
+  try {
+    await api.put('/preferences', preferences);
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+    showToast('Failed to save preferences', 'error');
+  }
+}
+
+/**
+ * Get default preferences
+ */
+function getDefaultPreferences() {
+  return {
+    theme: 'light',
+    chart_type: 'line',
+    time_range: '30d',
+    page_size: 20,
+    show_trends: true,
+    dashboard_columns: 3
+  };
+}
+

@@ -46,7 +46,17 @@ class MetricsService:
         self.project_repo = ProjectRepository(db)
         self.metrics_repo = MetricsRepository(db)
 
-    def refresh_metrics(self, project_id: int, token: str, branch: str = "main") -> MetricsSnapshot:
+    def refresh_metrics(self, project_id: int, token: str, branch: Optional[str] = None) -> MetricsSnapshot:
+        """Refresh metrics for a project from SonarQube.
+        
+        Args:
+            project_id: Project ID to refresh
+            token: Authentication token  
+            branch: Optional branch name. If None, uses SonarQube's default branch.
+            
+        Returns:
+            MetricsSnapshot: Created metrics snapshot
+        """
         project = self.project_repo.get_by_id(project_id)
         connection = self.connection_repo.get_by_id(project.connection_id)
 
@@ -61,9 +71,12 @@ class MetricsService:
         if analysis_date and analysis_date > fetch_timestamp:
             raise InvalidAPIResponseError("Analysis date is in the future")
 
+        # Use the branch name from response if available, otherwise use provided branch or "main"
+        branch_name = metrics_data.get("branch_name") or branch or "main"
+
         snapshot = MetricsSnapshot(
             project_id=project_id,
-            branch_name=branch,
+            branch_name=branch_name,
             analysis_date=analysis_date or fetch_timestamp,
             fetch_timestamp=fetch_timestamp,
             bugs_count=metrics_data["bugs_count"],
@@ -79,6 +92,18 @@ class MetricsService:
 
         return self.metrics_repo.create(snapshot)
 
-    def get_metrics(self, project_id: int, branch: str = "main", limit: int = 30) -> List[MetricsSnapshot]:
+    def get_metrics(self, project_id: int, branch: Optional[str] = None, limit: int = 30) -> List[MetricsSnapshot]:
+        """Get metrics for a project.
+        
+        Args:
+            project_id: Project ID
+            branch: Optional branch name filter. If None, fetches all branches.
+            limit: Maximum number of snapshots to return
+            
+        Returns:
+            List[MetricsSnapshot]: List of metrics snapshots
+        """
         self.project_repo.get_by_id(project_id)
-        return self.metrics_repo.list_snapshots(project_id, branch, limit)
+        # If branch is explicitly None, fetch for default branch "main"
+        branch_filter = branch if branch is not None else "main"
+        return self.metrics_repo.list_snapshots(project_id, branch_filter, limit)

@@ -90,5 +90,29 @@ class MetricsSnapshot(Base):
             raise ValueError(f"{key} must be a JSON object")
         return value
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert metrics snapshot to dictionary representation.
+        
+        Returns:
+            Dictionary with all metrics fields
+        """
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "branch_name": self.branch_name,
+            "analysis_date": self.analysis_date.isoformat() if self.analysis_date else None,
+            "fetch_timestamp": self.fetch_timestamp.isoformat() if self.fetch_timestamp else None,
+            "bugs_count": self.bugs_count,
+            "vulnerabilities_count": self.vulnerabilities_count,
+            "code_smells_count": self.code_smells_count,
+            "coverage_pct": self.coverage_pct,
+            "duplications_pct": self.duplications_pct,
+            "quality_gate_status": self.quality_gate_status,
+            "quality_gate_details": self.quality_gate_details,
+            "severity_breakdown": self.severity_breakdown,
+            "ncloc": self.ncloc,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
     def __repr__(self) -> str:
         return f"<MetricsSnapshot(id={self.id}, project_id={self.project_id}, branch='{self.branch_name}')>"

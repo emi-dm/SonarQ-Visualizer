@@ -54,7 +54,7 @@ class MetricsListResponse(BaseModel):
 
 class MetricsRefreshRequest(BaseModel):
     token: str = Field(..., min_length=1)
-    branch: str = Field(default="main")
+    branch: Optional[str] = Field(default=None, description="Branch name. If not provided, uses the default branch.")
 
 
 class ErrorResponse(BaseModel):
@@ -70,7 +70,7 @@ def build_error_response(status_code: int, error: str, message: str, details: Op
 @router.get("/{project_id}/metrics", response_model=MetricsListResponse)
 async def get_metrics(
     project_id: int,
-    branch: str = Query(default="main"),
+    branch: Optional[str] = Query(default=None, description="Branch name filter. If not provided, fetches main branch."),
     limit: int = Query(default=30, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
@@ -85,7 +85,7 @@ async def get_metrics(
 
         return MetricsListResponse(
             project_id=project_id,
-            branch_name=branch,
+            branch_name=branch or "main",
             snapshots=[MetricsSnapshotResponse.from_orm(s) for s in snapshots]
         )
 

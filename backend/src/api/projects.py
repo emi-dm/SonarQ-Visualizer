@@ -25,6 +25,7 @@ import time
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/connections", tags=["projects"])
+projects_router = APIRouter(prefix="/projects", tags=["projects"])  # Direct project endpoints
 
 
 class ProjectResponse(BaseModel):
@@ -201,7 +202,7 @@ async def sync_projects(
         return build_error_response(status.HTTP_503_SERVICE_UNAVAILABLE, "CONNECTION_FAILED", e.message, e.details)
 
 
-@router.get("/projects/{project_id}", response_model=ProjectDetailedResponse, tags=["projects"])
+@projects_router.get("/{project_id}", response_model=ProjectDetailedResponse)
 async def get_project(
     project_id: int,
     include_metrics: bool = Query(default=False),
@@ -232,7 +233,7 @@ async def get_project(
         return build_error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", e.message, e.details)
 
 
-@router.get("/projects/{project_id}/branches", response_model=List[dict], tags=["projects"])
+@projects_router.get("/{project_id}/branches", response_model=List[dict])
 async def list_branches(
     project_id: int,
     db: Session = Depends(get_db)

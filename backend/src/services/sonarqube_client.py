@@ -37,9 +37,8 @@ class SonarQubeClient:
         self.token = token
         self.timeout = settings.sonarqube_timeout
         self.session = requests.Session()
-        self.session.headers.update({
-            'Authorization': f'Bearer {token}'
-        })
+        # SonarQube uses Basic Auth with token as username and empty password
+        self.session.auth = (token, '')
     
     def _make_request(
         self,
@@ -204,8 +203,16 @@ class SonarQubeClient:
 
         return projects
 
-    def get_project_metrics(self, project_key: str, branch: str = "main") -> Dict[str, Any]:
-        """Fetch metrics for a project from SonarQube."""
+    def get_project_metrics(self, project_key: str, branch: Optional[str] = None) -> Dict[str, Any]:
+        """Fetch metrics for a project from SonarQube.
+        
+        Args:
+            project_key: Project key to fetch metrics for  
+            branch: Optional branch name. If None, uses default branch. If explicitly set to empty string, omits branch parameter.
+            
+        Returns:
+            Dict[str, Any]: Parsed metrics response
+        """
         metric_keys = [
             "bugs",
             "vulnerabilities",
@@ -214,7 +221,8 @@ class SonarQubeClient:
             "duplicated_lines_density",
             "ncloc",
             "alert_status",
-            "quality_gate_status",
+            # NOTE: quality_gate_status causes 404 on some SonarCloud projects
+            # Use alert_status instead which provides the same information
             "quality_gate_details",
             "blocker_violations",
             "critical_violations",
@@ -227,11 +235,22 @@ class SonarQubeClient:
             "component": project_key,
             "metricKeys": ",".join(metric_keys)
         }
-        if branch:
+        
+        # Only add branch parameter if explicitly specified
+        if branch is not None and branch != "":
             params["branch"] = branch
 
-        response = self._make_request("GET", "/api/measures/component", params=params)
-        return parse_measures_response(response)
+        try:
+            response = self._make_request("GET", "/api/measures/component", params=params)
+            return parse_measures_response(response)
+        except ConnectionError as e:
+            # If 404 with branch parameter, try without branch (default branch)
+            if branch and "404" in str(e):
+                logger.warning(f"Branch '{branch}' not found for {project_key}, retrying with default branch")
+                params.pop("branch", None)
+                response = self._make_request("GET", "/api/measures/component", params=params)
+                return parse_measures_response(response)
+            raise
 
     def get_project_branches(self, project_key: str) -> List[Dict[str, Any]]:
         """Fetch project branches from SonarQube."""
