@@ -110,10 +110,9 @@ class ConnectionService:
             logger.info(f"Connection validated: {connection.name}. Version: {server_version}")
             
             return {
-                'status': 'success',
+                'status': 'valid',
                 'server_version': server_version,
-                'server_status': validation_result.get('status'),
-                'connection_id': connection_id
+                'server_status': validation_result.get('status')
             }
         finally:
             client.close()

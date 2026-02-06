@@ -1,6 +1,7 @@
 """Connections API router with CRUD endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
@@ -33,16 +34,12 @@ class ConnectionCreate(BaseModel):
     @validator('server_url')
     def validate_url(cls, v):
         """Validate server URL format."""
-        import re
-        url_pattern = re.compile(
-            r'^https?://'
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
-            r'localhost|'
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-            r'(?::\d+)?'
-            r'(?:/?|[/?]\S+)?$', re.IGNORECASE
-        )
-        if not url_pattern.match(v):
+        from urllib.parse import urlparse
+
+        parsed = urlparse(v)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError('Invalid URL format')
+        if any(char.isspace() for char in v):
             raise ValueError('Invalid URL format')
         return v.rstrip('/')
 
@@ -79,7 +76,6 @@ class ValidationResponse(BaseModel):
     status: str
     server_version: Optional[str]
     server_status: Optional[str]
-    connection_id: int
 
 
 class ErrorResponse(BaseModel):
@@ -87,6 +83,23 @@ class ErrorResponse(BaseModel):
     error: str
     message: str
     details: Optional[dict] = None
+
+
+def build_error_response(
+    status_code: int,
+    error: str,
+    message: str,
+    details: Optional[dict] = None
+) -> JSONResponse:
+    """Build a consistent error response payload."""
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": error,
+            "message": message,
+            "details": details
+        }
+    )
 
 
 @router.post("", response_model=ConnectionResponse, status_code=status.HTTP_201_CREATED)
@@ -125,24 +138,34 @@ async def create_connection(
     except ConflictError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, "/connections", "POST", duration_ms, 409, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"error": "conflict", "message": e.message, "details": e.details}
+        return build_error_response(
+            status.HTTP_409_CONFLICT,
+            "CONFLICT",
+            e.message,
+            e.details
         )
     except (ConnError, AuthenticationError, TokenExpiredError) as e:
         duration_ms = (time.time() - start_time) * 1000
-        status_code = 401 if isinstance(e, (AuthenticationError, TokenExpiredError)) else 503
+        status_code = 401 if isinstance(e, (AuthenticationError, TokenExpiredError)) else 422
+        error_code = "AUTHENTICATION_FAILED"
+        if isinstance(e, TokenExpiredError):
+            error_code = "TOKEN_EXPIRED"
+        if isinstance(e, ConnError):
+            error_code = "VALIDATION_ERROR"
         log_api_call(logger, "/connections", "POST", duration_ms, status_code, str(e))
-        raise HTTPException(
-            status_code=status_code,
-            detail={"error": "validation_failed", "message": e.message, "details": e.details}
+        return build_error_response(
+            status_code,
+            error_code,
+            e.message,
+            e.details
         )
     except ValueError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, "/connections", "POST", duration_ms, 422, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"error": "validation_error", "message": str(e)}
+        return build_error_response(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "VALIDATION_ERROR",
+            str(e)
         )
 
 
@@ -198,9 +221,11 @@ async def get_connection(
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}", "GET", duration_ms, 404, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "not_found", "message": e.message, "details": e.details}
+        return build_error_response(
+            status.HTTP_404_NOT_FOUND,
+            "NOT_FOUND",
+            e.message,
+            e.details
         )
 
 
@@ -242,16 +267,20 @@ async def update_connection(
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}", "PUT", duration_ms, 404, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "not_found", "message": e.message, "details": e.details}
+        return build_error_response(
+            status.HTTP_404_NOT_FOUND,
+            "NOT_FOUND",
+            e.message,
+            e.details
         )
     except ConflictError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}", "PUT", duration_ms, 409, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"error": "conflict", "message": e.message, "details": e.details}
+        return build_error_response(
+            status.HTTP_409_CONFLICT,
+            "CONFLICT",
+            e.message,
+            e.details
         )
 
 
@@ -281,9 +310,11 @@ async def delete_connection(
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}", "DELETE", duration_ms, 404, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "not_found", "message": e.message, "details": e.details}
+        return build_error_response(
+            status.HTTP_404_NOT_FOUND,
+            "NOT_FOUND",
+            e.message,
+            e.details
         )
 
 
@@ -320,21 +351,33 @@ async def validate_connection(
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}/validate", "POST", duration_ms, 404, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "not_found", "message": e.message, "details": e.details}
+        return build_error_response(
+            status.HTTP_404_NOT_FOUND,
+            "NOT_FOUND",
+            e.message,
+            e.details
         )
     except (AuthenticationError, TokenExpiredError) as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}/validate", "POST", duration_ms, 401, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"error": "authentication_failed", "message": e.message, "details": e.details}
+        error_code = "AUTHENTICATION_FAILED"
+        if isinstance(e, TokenExpiredError):
+            error_code = "TOKEN_EXPIRED"
+        return build_error_response(
+            status.HTTP_401_UNAUTHORIZED,
+            error_code,
+            e.message,
+            e.details
         )
     except ConnError as e:
         duration_ms = (time.time() - start_time) * 1000
         log_api_call(logger, f"/connections/{connection_id}/validate", "POST", duration_ms, 503, str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"error": "connection_failed", "message": e.message, "details": e.details}
+        error_code = "CONNECTION_FAILED"
+        if "timeout" in str(e.message).lower():
+            error_code = "CONNECTION_TIMEOUT"
+        return build_error_response(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            error_code,
+            e.message,
+            e.details
         )

@@ -1,6 +1,7 @@
 """Integration tests for connection validation flow with mock SonarQube API."""
 
 import pytest
+import requests
 import requests_mock
 from fastapi.testclient import TestClient
 from backend.src.main import app
@@ -29,8 +30,7 @@ def client(test_db):
     original_path = settings.database_path
     settings.database_path = test_db
     
-    from starlette.testclient import TestClient as StarletteTestClient
-    test_client = StarletteTestClient(app)
+    test_client = TestClient(app)
     
     yield test_client
     
@@ -73,7 +73,7 @@ class TestConnectionValidation:
             
             assert response.status_code == 200
             data = response.json()
-            assert data["status"] == "success"
+            assert data["status"] == "valid"
             assert data["server_version"] == "9.9.0"
             assert data["server_status"] == "UP"
     
@@ -123,7 +123,7 @@ class TestConnectionValidation:
         with requests_mock.Mocker() as m:
             m.get(
                 "https://sonarqube.test.com/api/system/status",
-                exc=requests_mock.exceptions.ConnectTimeout
+                exc=requests.exceptions.ConnectTimeout
             )
             
             validate_payload = {"token": "squ_test"}
@@ -152,7 +152,7 @@ class TestConnectionValidation:
         with requests_mock.Mocker() as m:
             m.get(
                 "https://sonarqube.test.com/api/system/status",
-                exc=requests_mock.exceptions.ReadTimeout
+                exc=requests.exceptions.ReadTimeout
             )
             
             validate_payload = {"token": "squ_test"}

@@ -3,17 +3,22 @@
 Represents an authenticated connection to a SonarQube server.
 """
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, UniqueConstraint, Index
 from sqlalchemy.orm import validates
 from datetime import datetime
+from urllib.parse import urlparse
+
 from backend.src.db.base import Base
-import re
 
 
 class Connection(Base):
     """Connection model for SonarQube server connections."""
     
     __tablename__ = "connections"
+    __table_args__ = (
+        UniqueConstraint("name", name="uq_connections_name"),
+        Index("ix_connections_server_url", "server_url"),
+    )
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False, unique=True)
@@ -23,6 +28,12 @@ class Connection(Base):
     last_validated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __init__(self, **kwargs):
+        """Initialize connection with sensible defaults."""
+        if "is_active" not in kwargs or kwargs["is_active"] is None:
+            kwargs["is_active"] = True
+        super().__init__(**kwargs)
     
     @validates('name')
     def validate_name(self, key: str, name: str) -> str:
@@ -62,18 +73,11 @@ class Connection(Base):
         if not server_url:
             raise ValueError("Server URL cannot be empty")
         
-        # Basic URL validation
-        url_pattern = re.compile(
-            r'^https?://'  # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-            r'localhost|'  # localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'  # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE
-        )
-        
-        if not url_pattern.match(server_url):
+        parsed = urlparse(server_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("Invalid URL format. Must be a valid HTTP or HTTPS URL")
+        if any(char.isspace() for char in server_url):
+            raise ValueError("Invalid URL format. URL must not contain spaces")
         
         # Remove trailing slash
         return server_url.rstrip('/')

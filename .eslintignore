@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+coverage/
+htmlcov/
+frontend/dist/
+frontend/build/
+*.min.js

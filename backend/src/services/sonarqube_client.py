@@ -194,21 +194,14 @@ def validate_connection_url(url: str) -> bool:
     Raises:
         ValueError: If URL is invalid
     """
-    import re
-    
     if not url:
         raise ValueError("URL cannot be empty")
-    
-    url_pattern = re.compile(
-        r'^https?://'
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
-        r'localhost|'
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-        r'(?::\d+)?'
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE
-    )
-    
-    if not url_pattern.match(url):
+
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("Invalid URL format")
+    if any(char.isspace() for char in url):
         raise ValueError("Invalid URL format")
     
     return True

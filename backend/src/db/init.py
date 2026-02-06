@@ -8,20 +8,35 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-# Database file path
-DB_PATH = Path("data/sonarq.db")
+from backend.src.utils.config import get_database_path
 
 
-def get_db_connection() -> sqlite3.Connection:
+def _resolve_db_path(db_path: Optional[str] = None) -> Path:
+    """Resolve database path from optional override or settings.
+    
+    Args:
+        db_path: Optional database path override
+    
+    Returns:
+        Path: Resolved database path
+    """
+    if db_path:
+        return Path(db_path).resolve()
+    return get_database_path()
+
+
+def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """Create and configure a SQLite database connection.
     
     Returns:
         sqlite3.Connection: Configured database connection with WAL mode and foreign keys enabled
     """
+    db_file = _resolve_db_path(db_path)
+
     # Ensure data directory exists
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    db_file.parent.mkdir(parents=True, exist_ok=True)
     
-    conn = sqlite3.Connection(str(DB_PATH))
+    conn = sqlite3.Connection(str(db_file))
     
     # Enable WAL mode for better concurrency
     conn.execute("PRAGMA journal_mode=WAL;")
@@ -45,9 +60,7 @@ def init_database(db_path: Optional[str] = None) -> None:
         FileNotFoundError: If schema.sql file is not found
         sqlite3.Error: If database initialization fails
     """
-    if db_path:
-        global DB_PATH
-        DB_PATH = Path(db_path)
+    db_file = _resolve_db_path(db_path)
     
     # Read schema from file
     schema_path = Path(__file__).parent / "schema.sql"
@@ -57,11 +70,11 @@ def init_database(db_path: Optional[str] = None) -> None:
     schema_sql = schema_path.read_text()
     
     # Create connection and execute schema
-    conn = get_db_connection()
+    conn = get_db_connection(str(db_file))
     try:
         conn.executescript(schema_sql)
         conn.commit()
-        print(f"✓ Database initialized at {DB_PATH}")
+        print(f"✓ Database initialized at {db_file}")
     except sqlite3.Error as e:
         conn.rollback()
         raise sqlite3.Error(f"Failed to initialize database: {e}") from e
@@ -75,11 +88,12 @@ def check_database_exists() -> bool:
     Returns:
         bool: True if database exists, False otherwise
     """
-    if not DB_PATH.exists():
+    db_file = get_database_path()
+    if not db_file.exists():
         return False
     
     try:
-        conn = get_db_connection()
+        conn = get_db_connection(str(db_file))
         cursor = conn.cursor()
         # Check if connections table exists
         cursor.execute(
