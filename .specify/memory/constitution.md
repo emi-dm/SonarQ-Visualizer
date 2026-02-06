@@ -1,50 +1,101 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: none → 1.0.0
+Modified principles:
+- Added: I. Test-First & Property-Based Testing (NON-NEGOTIABLE)
+- Added: II. Documentation & Traceability (Changelog + Docs)
+- Added: III. Maintainability & Code Health
+- Added: IV. Reproducible Releases & Semantic Versioning
+- Added: V. Observability, Simplicity & Error Signals
+Added sections:
+- Additional Constraints (technology-agnostic requirements)
+- Development Workflow (review, CI, gating)
+Removed sections: none
+Templates requiring review (⚠ pending):
+- .specify/templates/plan-template.md ⚠ pending (Constitution Check: ensure PBT + changelog gates reflected)
+- .specify/templates/spec-template.md ⚠ pending (User Scenarios & Testing: add PBT as mandatory test type)
+- .specify/templates/tasks-template.md ⚠ pending (Tasks: ensure test tasks include property-based tests and changelog tasks)
+- .specify/templates/checklist-template.md ⚠ pending
+Follow-up TODOs:
+- RATIFICATION_DATE: TODO(RATIFICATION_DATE): original ratification date unknown; maintainers must set this value when ratifying.
+-->
+
+# SonarQ-Visualizer Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Test-First & Property-Based Testing (NON-NEGOTIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Todas las funcionalidades y librerías deben diseñarse con pruebas primero. Las pruebas deben incluir Property-Based Tests (PBT) para las invariantes y comportamientos clave, además de tests unitarios y de integración.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- MUST: Escribir tests que fallen antes de implementar (Red-Green-Refactor).
+- MUST: Incluir PBT para los invariantes del dominio y entradas/límites relevantes; PBT debe ejecutarse en CI y en la matriz de pruebas locales.
+- SHOULD: Mantener suites rápidas (unit) y suites más exhaustivas (PBT, integración) separadas para tiempos de ejecución manejables.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Rationale: PBT encuentra clases de fallos que los tests unitarios basados en ejemplos no detectan; imponer PBT mejora la robustez y mantiene la calidad en cambios refactor.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. Documentation & Traceability (Changelog + Docs)
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+El proyecto debe estar completamente documentado y cada cambio debe ser trazable.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- MUST: Toda PR que cambia comportamiento público debe incluir o actualizar el changelog (CHANGELOG.md) con una entrada clara que siga el formato Keep a Changelog.
+- MUST: Mantener documentación mínima: README.md (quickstart), docs/ (arquitectura, contributing, releases), y especificaciones por característica en specs/.
+- MUST: Cada especificación y tarea asociada debe referenciar el issue/PR correspondiente para trazabilidad completa.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Rationale: La trazabilidad y documentación reducen la fricción para nuevos contribuyentes, facilitan auditorías y permiten releases reproducibles.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### III. Maintainability & Code Health
+
+El código debe ser modular, legible y sujeto a gates automáticos de calidad.
+
+- MUST: Aplicar linters, formateadores y reglas de estilo en CI; fallas en linting deben bloquear merges.
+- SHOULD: Preferir diseño modular, interfaces pequeñas y documentación inline; usar tipos (annotations) cuando el lenguaje lo soporte.
+- MUST: Todas las dependencias externas deben estar justificadas en la documentación y listadas en el manifiesto de dependencias.
+
+Rationale: Mantener la deuda técnica baja y facilitar refactors seguros mejora la velocidad de entrega a largo plazo.
+
+### IV. Reproducible Releases & Semantic Versioning
+
+Las publicaciones deben ser reproducibles y semánticamente versionadas.
+
+- MUST: Usar Semantic Versioning (MAJOR.MINOR.PATCH). Las reglas de bump:
+  - MAJOR: Cambios incompatibles o reescrituras de gobernanza/principales principios.
+  - MINOR: Nuevas secciones o principios añadidos, o extensiones materiales.
+  - PATCH: Correcciones menores, clarificaciones o typo fixes.
+- MUST: Cada release debe incluir una entrada en CHANGELOG.md y un conjunto de artefactos/commit tags que permitan reconstrucción reproducible.
+
+Rationale: Versionado claro y changelog garantizan confianza para usuarios y para integraciones automatizadas.
+
+### V. Observability, Simplicity & Error Signals
+
+Simplicidad primero; el proyecto debe instrumentar señales básicas de salud y errores.
+
+- MUST: Emitir logs estructurados y métricas básicas para procesos críticos; usar stderr para errores en herramientas CLI.
+- SHOULD: Preferir soluciones simples y comprobadas (KISS); evitar optimizaciones prematuras.
+
+Rationale: Observability permite depuración efectiva y operaciones seguras en producción o en ejecuciones locales complejas.
+
+## Additional Constraints
+
+- Technology-agnostic requirements:
+  - The project MUST maintain a quickstart in README.md that reproduces a working example in ≤ 5 steps.
+  - Tests MUST run on CI with an explicit matrix (unit, pbt, integration).
+  - Security-sensitive changes MUST include a documented threat assessment in the related spec.
+
+## Development Workflow
+
+- All work MUST go through issues → branch → PR; PRs require at least one approving maintainer review and passing CI (lint, tests, PBT).
+- CI MUST run: linters, unit tests, property-based tests (sample/limited seeds for PRs; full runs on main), and changelog validation.
+- Complex or breaking changes MUST include a migration plan in the PR description.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- The constitution is the top-level guidance for project practices. Amendments process:
+  1.  Propose amendment as a PR against `.specify/memory/constitution.md` with rationale and migration plan.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+2.  Label PR with `governance/amendment` and include maintainers as reviewers.
+3.  Non-breaking clarifications (PATCH) require one approving maintainer. Material additions (MINOR) require two maintainers. Breaking governance or principle removals (MAJOR) require consensus from majority of maintainers and an explicit migration plan. 4. On merge, update `Last Amended` date and bump `CONSTITUTION_VERSION` per semantic rules.
+
+- Compliance review expectations: Every PR that affects code quality, testing, or release process MUST reference the relevant principle and demonstrate passing CI gates. Audits may be requested quarterly.
+
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): original ratification date unknown | **Last Amended**: 2026-02-06
