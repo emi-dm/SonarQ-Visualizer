@@ -26,7 +26,7 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 - [ ] T001 Create project directory structure: backend/src/{models,services,api,db,utils}, backend/tests/{unit,integration,property}, frontend/{css,js,assets}, docs/, data/
 - [ ] T002 Initialize Python project with requirements.txt including: fastapi, uvicorn, sqlalchemy, requests, pytest, pytest-cov, hypothesis, black, flake8, mypy
 - [ ] T003 [P] Configure Python tooling in pyproject.toml: black (line-length=100), mypy (strict=true), pytest settings
-- [ ] T004 [P] Setup .gitignore for Python, SQLite, editor files, and **pycache**
+- [ ] T004 [P] Setup .gitignore for Python, SQLite, editor files, and `__pycache__`
 - [ ] T005 [P] Create README.md with project overview and quickstart (≤5 steps from quickstart.md)
 - [ ] T006 [P] Initialize CHANGELOG.md with version 0.1.0 entry (Keep a Changelog format)
 - [ ] T007 [P] Setup frontend package.json for ESLint and development tooling
@@ -106,6 +106,7 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 - [ ] T041 [P] [US2] Property-based test for SonarQube API response parsing in backend/tests/property/test_sonarqube_parsing.py with varied JSON structures
 - [ ] T042 [P] [US2] Integration test for project sync endpoint in backend/tests/integration/test_projects_sync.py with mock SonarQube API
 - [ ] T043 [P] [US2] Integration test for metrics refresh flow in backend/tests/integration/test_metrics_refresh.py with partial failure scenarios (FR-024)
+- [ ] T043b [P] [US2] Integration test for SonarQube edition compatibility in backend/tests/integration/test_sonarqube_editions.py with mock Community (8.x+) and Enterprise (9.x+) API responses per FR-012
 
 ### Implementation for User Story 2
 
@@ -153,9 +154,10 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 - [ ] T069 [US3] Create dashboard API router in backend/src/api/dashboard.py with GET /dashboard supporting connection_id and project_ids filters
 - [ ] T070 [US3] Create preferences API router in backend/src/api/preferences.py with GET /preferences, PUT /preferences
 - [ ] T071 [US3] Add Chart.js library to frontend/index.html with lazy loading strategy per research.md
-- [ ] T072 [US3] Implement chart rendering module in frontend/js/charts.js with functions for line charts (trends), pie charts (severity distribution), gauge charts (coverage with color thresholds per FR-002)
+- [ ] T072 [US3] Implement chart rendering module in frontend/js/charts.js with functions for line charts (trends), pie charts (severity distribution), gauge charts (coverage with color thresholds: red <50%, yellow 50-80%, green >80% per research.md)
 - [ ] T073 [US3] Create multi-project dashboard UI in frontend/index.html with project cards, aggregate statistics section, and comparison view
 - [ ] T074 [US3] Implement dashboard data fetching and rendering in frontend/js/app.js with filter controls (connection, time range, metrics selection)
+- [ ] T074b [US3] Implement filtering capabilities in frontend/js/app.js for metric categories (bugs/vulnerabilities/code smells/coverage/duplications) and time range selection per FR-014
 - [ ] T075 [US3] Add chart interactivity in frontend/js/charts.js with tooltips, click-to-drill-down from dashboard to project detail
 - [ ] T076 [US3] Implement visualization preferences in frontend/js/app.js with localStorage persistence for chart types, themes, time ranges
 - [ ] T077 [US3] Create responsive dashboard layout in frontend/css/styles.css with mobile (stacked), tablet (2-column), desktop (3-column) breakpoints per research.md
@@ -231,7 +233,7 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 **Within User Story 2 (Phase 4)**:
 
-- Tests T038, T039, T040, T041, T042, T043 can run in parallel
+- Tests T038, T039, T040, T041, T042, T043, T043b can run in parallel
 - Models T044, T045, T046, T047 can run in parallel
 
 **Within User Story 3 (Phase 5)**:
@@ -289,9 +291,9 @@ Task T026: "Create connection repository in backend/src/db/repositories/connecti
 
 1. **Foundation** (Phases 1-2): 20 tasks → Foundation ready
 2. **MVP** (+ Phase 3): 37 total tasks → User Story 1 complete → Deploy/Demo
-3. **Core Value** (+ Phase 4): 61 total tasks → User Story 2 complete → Users can fetch and view metrics → Deploy/Demo
-4. **Full Feature** (+ Phase 5): 78 total tasks → User Story 3 complete → Visual dashboards → Deploy/Demo
-5. **Production Ready** (+ Phase 6): 93 total tasks → Polish complete → Production deployment
+3. **Core Value** (+ Phase 4): 62 total tasks → User Story 2 complete → Users can fetch and view metrics → Deploy/Demo
+4. **Full Feature** (+ Phase 5): 80 total tasks → User Story 3 complete → Visual dashboards → Deploy/Demo
+5. **Production Ready** (+ Phase 6): 95 total tasks → Polish complete → Production deployment
 
 Each increment adds value without breaking previous stories.
 
@@ -321,17 +323,17 @@ With 3 developers available:
 
 ## Task Summary
 
-- **Total Tasks**: 93
+- **Total Tasks**: 95
 - **Setup Phase**: 8 tasks
 - **Foundational Phase**: 12 tasks (BLOCKS all user stories)
 - **User Story 1 (P1)**: 17 tasks (5 test tasks + 12 implementation tasks) 🎯 MVP
-- **User Story 2 (P2)**: 24 tasks (6 test tasks + 18 implementation tasks)
-- **User Story 3 (P3)**: 17 tasks (3 test tasks + 14 implementation tasks)
+- **User Story 2 (P2)**: 25 tasks (7 test tasks + 18 implementation tasks)
+- **User Story 3 (P3)**: 18 tasks (3 test tasks + 15 implementation tasks)
 - **Polish Phase**: 15 tasks
 
-**Test Coverage**: 14 test tasks (15% of total) including unit, property-based (Hypothesis), and integration tests per constitution
+**Test Coverage**: 15 test tasks (16% of total) including unit, property-based (Hypothesis), and integration tests per constitution
 
-**Parallel Opportunities**: 30+ tasks marked [P] can run in parallel within their phases
+**Parallel Opportunities**: 32+ tasks marked [P] can run in parallel within their phases
 
 **Independent Test Criteria**:
 

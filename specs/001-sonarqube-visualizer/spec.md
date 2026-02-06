@@ -110,7 +110,7 @@ A user wants to view project metrics through attractive charts, graphs, and visu
 - **FR-026**: System MUST implement Content Security Policy (CSP) headers to prevent XSS attacks: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'
 - **FR-027**: System MUST calculate staleness indicator as: (current_timestamp - fetch_timestamp) formatted as human-readable duration (e.g., "2 hours ago", "3 days ago") with staleness warning threshold at 24 hours
 - **FR-028**: System MUST handle invalid or malformed SonarQube API responses by logging the error, returning graceful error message to user, and marking the operation as failed without crashing
-- **FR-029**: Backend metrics aggregation service MUST calculate dashboard statistics as: total_bugs = SUM(bugs_count), avg_coverage = AVG(coverage_pct), quality_gate_pass_rate = COUNT(status='OK')/COUNT(_) _ 100
+- **FR-029**: Backend metrics aggregation service MUST calculate dashboard statistics as: total*bugs = SUM(bugs_count), avg_coverage = AVG(coverage_pct), quality_gate_pass_rate = COUNT(status='OK')/COUNT(*) \_ 100
 - **FR-030**: System MUST support pagination for project lists with default page_size=20, maximum page_size=100, returning total_count in response metadata
 - **FR-031**: System MUST detect authentication token expiration errors (HTTP 401 from SonarQube) and clear stored token from localStorage, prompting user to re-authenticate
 - **FR-032**: System MUST validate metrics boundary conditions: bugs_count >= 0, coverage_pct between 0.00-100.00 (nullable), quality_gate_status in ['OK', 'WARN', 'ERROR'], rejecting invalid data
@@ -131,7 +131,7 @@ A user wants to view project metrics through attractive charts, graphs, and visu
 ### Measurable Outcomes
 
 - **SC-001**: Users can successfully connect to a SonarQube instance and view available projects in under 30 seconds
-- **SC-002**: Metrics for a project are fetched and displayed within 5 seconds for projects with up to 1 million lines of code (metrics scope: bugs, vulnerabilities, code smells, coverage, duplications, quality gate; precision: counts as integers, percentages to 2 decimal places)
+- **SC-002**: Metrics for a project are fetched and displayed within 5 seconds for projects with up to 1 million lines of code (excludes network latency to SonarQube server; measured from API call initiation to UI display; metrics scope: bugs, vulnerabilities, code smells, coverage, duplications, quality gate; precision: counts as integers, percentages to 2 decimal places)
 - **SC-003**: Visualizations render within 2 seconds after metrics data is loaded
 - **SC-004**: 95% of connection errors provide actionable error messages that guide user to resolution
 - **SC-005**: Tool successfully retrieves data from both SonarQube Community (8.x+) and Enterprise editions (9.x+)
