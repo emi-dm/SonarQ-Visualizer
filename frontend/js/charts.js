@@ -82,7 +82,7 @@ function renderTrendChart(canvasId, data, options = {}) {
     if (data.some(item => 'bugs_count' in item || 'bugs' in item)) {
         datasets.push({
             label: 'Bugs',
-            data: data.map(item => item.bugs_count || item.bugs),
+            data: data.map(item => (item.bugs_count ?? item.bugs)),
             borderColor: COLORS.bugs,
             backgroundColor: COLORS.bugs + '33',
             tension: 0.4,
@@ -94,7 +94,7 @@ function renderTrendChart(canvasId, data, options = {}) {
     if (data.some(item => 'vulnerabilities_count' in item || 'vulnerabilities' in item)) {
         datasets.push({
             label: 'Vulnerabilities',
-            data: data.map(item => item.vulnerabilities_count || item.vulnerabilities),
+            data: data.map(item => (item.vulnerabilities_count ?? item.vulnerabilities)),
             borderColor: COLORS.vulnerabilities,
             backgroundColor: COLORS.vulnerabilities + '33',
             tension: 0.4,
@@ -106,7 +106,7 @@ function renderTrendChart(canvasId, data, options = {}) {
     if (data.some(item => 'coverage_pct' in item || 'coverage' in item)) {
         datasets.push({
             label: 'Coverage (%)',
-            data: data.map(item => item.coverage_pct || item.coverage),
+            data: data.map(item => (item.coverage_pct ?? item.coverage)),
             borderColor: COLORS.coverage.high,
             backgroundColor: COLORS.coverage.high + '33',
             tension: 0.4,
@@ -146,9 +146,9 @@ function renderTrendChart(canvasId, data, options = {}) {
                             }
                             const value = context.parsed.y;
                             if (context.dataset.yAxisID === 'y1') {
-                                label += value ? value.toFixed(2) + '%' : 'N/A';
+                                label += value === null || value === undefined ? 'N/A' : value.toFixed(2) + '%';
                             } else {
-                                label += value !== null ? value : 'N/A';
+                                label += value === null || value === undefined ? 'N/A' : value;
                             }
                             return label;
                         }
@@ -269,7 +269,7 @@ function renderCoverageGauge(canvasId, coveragePercent, options = {}) {
 
     const ctx = canvas.getContext('2d');
     
-    const value = coveragePercent || 0;
+    const value = coveragePercent ?? 0;
     const remaining = 100 - value;
     const color = getCoverageColor(value);
     
@@ -341,7 +341,7 @@ function renderProjectComparisonChart(canvasId, projects, options = {}) {
 
     const ctx = canvas.getContext('2d');
     
-    const labels = projects.map(p => p.name || p.project_name);
+    const labels = projects.map(p => (p.name ?? p.project_name));
     
     const chart = new Chart(ctx, {
         type: 'bar',
@@ -350,19 +350,19 @@ function renderProjectComparisonChart(canvasId, projects, options = {}) {
             datasets: [
                 {
                     label: 'Bugs',
-                    data: projects.map(p => p.bugs_count || p.bugs),
+                    data: projects.map(p => (p.bugs_count ?? p.bugs)),
                     backgroundColor: COLORS.bugs,
                     yAxisID: 'y'
                 },
                 {
                     label: 'Vulnerabilities',
-                    data: projects.map(p => p.vulnerabilities_count || p.vulnerabilities),
+                    data: projects.map(p => (p.vulnerabilities_count ?? p.vulnerabilities)),
                     backgroundColor: COLORS.vulnerabilities,
                     yAxisID: 'y'
                 },
                 {
                     label: 'Coverage (%)',
-                    data: projects.map(p => p.coverage_pct || p.coverage),
+                    data: projects.map(p => (p.coverage_pct ?? p.coverage)),
                     backgroundColor: COLORS.coverage.high,
                     yAxisID: 'y1'
                 }
