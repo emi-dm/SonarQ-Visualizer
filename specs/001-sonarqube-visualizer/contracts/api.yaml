@@ -564,6 +564,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /projects/{projectId}/metrics/export:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    get:
+      tags: [metrics]
+      summary: Export latest metrics snapshot
+      description: Export the most recent metrics snapshot for a project and branch as JSON or CSV
+      parameters:
+        - name: branch
+          in: query
+          schema:
+            type: string
+            default: "main"
+          description: Branch name to export metrics for
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Export format
+      responses:
+        '200':
+          description: Export file or JSON payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsSnapshot'
+            text/csv:
+              schema:
+                type: string
+                description: CSV export of latest snapshot
+        '400':
+          description: Invalid export format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found or no snapshots available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /projects/{projectId}/branches:
     parameters:
       - name: projectId

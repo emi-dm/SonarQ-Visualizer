@@ -46,11 +46,10 @@ python backend/app.py init-db
 
 **Expected output**: `✓ Database initialized at data/sonarq.db`
 
-### Step 4: Start Backend Server
+### Step 4: Start Frontend Server (first)
 
 ```bash
-# Development mode with auto-reload
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+npm run frontend
 ```
 
 **Expected output**:
@@ -60,9 +59,14 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process
 ```
 
-### Step 5: Open Browser
+### Step 5: Start Backend Server and Open Browser
 
-Navigate to: **http://localhost:8000**
+```bash
+# Development mode with auto-reload
+uvicorn backend.src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Navigate to: **http://localhost:8080**
 
 You should see the SonarQube Report Visualizer landing page.
 
@@ -95,8 +99,15 @@ You should see the SonarQube Report Visualizer landing page.
 If port 8000 is occupied:
 
 ```bash
-uvicorn backend.main:app --reload --port 8080
+uvicorn backend.src.main:app --reload --port 8080
 # Then open http://localhost:8080
+```
+
+If port 8080 is occupied (frontend):
+
+```bash
+python3 -m http.server 8081 --directory frontend
+# Then open http://localhost:8081
 ```
 
 ### Python Version Too Old
@@ -125,10 +136,10 @@ If you see "database is locked" errors:
 
 ```bash
 # Stop any running backend processes
-pkill -f "uvicorn backend.main"
+pkill -f "uvicorn backend.src.main"
 
 # Restart server
-uvicorn backend.main:app --reload
+uvicorn backend.src.main:app --reload
 ```
 
 ### Token Authentication Failed
@@ -152,7 +163,7 @@ If using HTTPS SonarQube server with HTTP localhost:
 ### Backend with Auto-Reload
 
 ```bash
-uvicorn backend.main:app --reload --log-level debug
+uvicorn backend.src.main:app --reload --log-level debug
 ```
 
 ### Run Tests

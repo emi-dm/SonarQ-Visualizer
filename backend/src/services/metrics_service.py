@@ -10,7 +10,7 @@ from backend.src.db.repositories.metrics_repository import MetricsRepository
 from backend.src.db.repositories.project_repository import ProjectRepository
 from backend.src.models.metrics_snapshot import MetricsSnapshot
 from backend.src.services.sonarqube_client import SonarQubeClient
-from backend.src.utils.errors import InvalidAPIResponseError
+from backend.src.utils.errors import InvalidAPIResponseError, NotFoundError
 from backend.src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -107,3 +107,23 @@ class MetricsService:
         # If branch is explicitly None, fetch for default branch "main"
         branch_filter = branch if branch is not None else "main"
         return self.metrics_repo.list_snapshots(project_id, branch_filter, limit)
+
+    def get_latest_snapshot(self, project_id: int, branch: Optional[str] = None) -> MetricsSnapshot:
+        """Get latest metrics snapshot for a project.
+
+        Args:
+            project_id: Project ID
+            branch: Optional branch name filter. If None, uses default branch "main"
+
+        Returns:
+            MetricsSnapshot: Latest metrics snapshot
+        """
+        self.project_repo.get_by_id(project_id)
+        branch_filter = branch if branch is not None else "main"
+        snapshot = self.metrics_repo.get_latest_snapshot(project_id, branch_filter)
+        if not snapshot:
+            raise NotFoundError(
+                "No metrics snapshots found for this project",
+                {"project_id": project_id, "branch_name": branch_filter}
+            )
+        return snapshot

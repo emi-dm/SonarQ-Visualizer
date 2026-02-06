@@ -11,7 +11,9 @@ const appState = {
   projects: [],
   projectPage: 1,
   projectPageSize: 20,
-  totalProjectPages: 1
+  totalProjectPages: 1,
+  virtualScrollHandler: null,
+  virtualItemHeight: 190
 };
 
 /**
@@ -44,6 +46,8 @@ function setupProjectListeners() {
   const projectSearch = document.getElementById('project-search');
   const backToProjectsBtn = document.getElementById('back-to-projects-btn');
   const refreshMetricsBtn = document.getElementById('refresh-metrics-btn');
+  const exportJsonBtn = document.getElementById('export-json-btn');
+  const exportCsvBtn = document.getElementById('export-csv-btn');
   const prevBtn = document.getElementById('projects-prev-btn');
   const nextBtn = document.getElementById('projects-next-btn');
   const branchSelector = document.getElementById('branch-selector');
@@ -52,9 +56,11 @@ function setupProjectListeners() {
     await syncProjects();
   });
 
-  projectSearch.addEventListener('input', () => {
+  const debouncedSearch = debounce(() => {
     renderProjects(appState.projects);
-  });
+  }, 300);
+
+  projectSearch.addEventListener('input', debouncedSearch);
 
   backToProjectsBtn.addEventListener('click', () => {
     showSection('projects');
@@ -62,6 +68,14 @@ function setupProjectListeners() {
 
   refreshMetricsBtn.addEventListener('click', async () => {
     await refreshMetrics();
+  });
+
+  exportJsonBtn.addEventListener('click', async () => {
+    await exportLatestMetrics('json');
+  });
+
+  exportCsvBtn.addEventListener('click', async () => {
+    await exportLatestMetrics('csv');
   });
 
   prevBtn.addEventListener('click', async () => {
@@ -287,7 +301,7 @@ async function loadConnections() {
     
   } catch (error) {
     console.error('Failed to load connections', {error});
-    showToast('Failed to load connections', 'error');
+    showToast(getErrorMessage(error, 'Failed to load connections'), 'error');
   } finally {
     hideLoading();
   }
@@ -365,7 +379,7 @@ async function syncProjects() {
     showToast(message, result.failed_count > 0 ? 'warning' : 'success');
     await loadProjects(appState.currentConnection.id, appState.projectPage);
   } catch (error) {
-    showToast(error.message || 'Failed to sync projects', 'error');
+    showToast(getErrorMessage(error, 'Failed to sync projects'), 'error');
   } finally {
     hideLoading();
   }
@@ -389,7 +403,7 @@ async function loadProjects(connectionId, page = 1) {
 
     renderProjects(response.projects);
   } catch (error) {
-    showToast('Failed to load projects', 'error');
+    showToast(getErrorMessage(error, 'Failed to load projects'), 'error');
   } finally {
     hideLoading();
   }
@@ -406,6 +420,7 @@ function renderProjects(projects) {
   });
 
   if (filtered.length === 0) {
+    disableVirtualProjectList(container);
     container.innerHTML = `
       <div class="empty-state">
         <p>No projects found. Sync projects to load data.</p>
@@ -414,7 +429,18 @@ function renderProjects(projects) {
     return;
   }
 
-  container.innerHTML = filtered.map(project => `
+  if (filtered.length > 100) {
+    renderProjectsVirtualized(container, filtered);
+    return;
+  }
+
+  disableVirtualProjectList(container);
+
+  container.innerHTML = filtered.map(project => buildProjectCardHtml(project)).join('');
+}
+
+function buildProjectCardHtml(project) {
+  return `
     <div class="card" data-project-id="${project.id}">
       <div class="card-header">
         <h3>${escapeHtml(project.name)}</h3>
@@ -428,7 +454,59 @@ function renderProjects(projects) {
         <button class="btn btn-secondary" onclick="openProjectDetail(${project.id})">View Metrics</button>
       </div>
     </div>
-  `).join('');
+  `;
+}
+
+function renderProjectsVirtualized(container, projects) {
+  disableVirtualProjectList(container);
+  container.classList.add('virtual-list');
+  container.dataset.virtualized = 'true';
+  container.scrollTop = 0;
+
+  const spacer = document.createElement('div');
+  spacer.className = 'virtual-spacer';
+  spacer.style.height = `${projects.length * appState.virtualItemHeight}px`;
+
+  const itemsContainer = document.createElement('div');
+  itemsContainer.className = 'virtual-items';
+
+  container.innerHTML = '';
+  container.appendChild(spacer);
+  container.appendChild(itemsContainer);
+
+  const renderVisible = () => {
+    const scrollTop = container.scrollTop;
+    const viewportHeight = container.clientHeight;
+    const buffer = 6;
+    const startIndex = Math.max(0, Math.floor(scrollTop / appState.virtualItemHeight) - buffer);
+    const endIndex = Math.min(
+      projects.length,
+      Math.ceil((scrollTop + viewportHeight) / appState.virtualItemHeight) + buffer
+    );
+
+    itemsContainer.innerHTML = '';
+
+    for (let index = startIndex; index < endIndex; index += 1) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'virtual-item';
+      wrapper.style.top = `${index * appState.virtualItemHeight}px`;
+      wrapper.innerHTML = buildProjectCardHtml(projects[index]);
+      itemsContainer.appendChild(wrapper);
+    }
+  };
+
+  appState.virtualScrollHandler = renderVisible;
+  container.addEventListener('scroll', renderVisible);
+  renderVisible();
+}
+
+function disableVirtualProjectList(container) {
+  if (appState.virtualScrollHandler) {
+    container.removeEventListener('scroll', appState.virtualScrollHandler);
+    appState.virtualScrollHandler = null;
+  }
+  container.classList.remove('virtual-list');
+  delete container.dataset.virtualized;
 }
 
 async function openProjectDetail(projectId) {
@@ -442,7 +520,7 @@ async function openProjectDetail(projectId) {
     await loadProjectMetrics(projectId, document.getElementById('branch-selector').value);
     showSection('project-detail');
   } catch (error) {
-    showToast('Failed to load project details', 'error');
+    showToast(getErrorMessage(error, 'Failed to load project details'), 'error');
   } finally {
     hideLoading();
   }
@@ -463,7 +541,7 @@ async function loadProjectMetrics(projectId, branch = 'main') {
     renderMetricsTable(snapshots);
     updateStaleness(snapshots[0]);
   } catch (error) {
-    showToast('Failed to load metrics', 'error');
+    showToast(getErrorMessage(error, 'Failed to load metrics'), 'error');
   } finally {
     hideLoading();
   }
@@ -531,7 +609,46 @@ async function refreshMetrics() {
     showToast('Metrics refreshed', 'success');
     await loadProjectMetrics(appState.currentProject.id, branch);
   } catch (error) {
-    showToast(error.message || 'Failed to refresh metrics', 'error');
+    showToast(getErrorMessage(error, 'Failed to refresh metrics'), 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function exportLatestMetrics(format) {
+  if (!appState.currentProject) {
+    showToast('Select a project first', 'error');
+    return;
+  }
+
+  const branch = document.getElementById('branch-selector').value || 'main';
+  const url = `${API_BASE_URL}/projects/${appState.currentProject.id}/metrics/export?format=${encodeURIComponent(format)}&branch=${encodeURIComponent(branch)}`;
+
+  showLoading();
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      let errorPayload = null;
+      try {
+        errorPayload = await response.json();
+      } catch (parseError) {
+        errorPayload = null;
+      }
+      const message = getErrorMessage(errorPayload, 'Failed to export metrics');
+      showToast(message, 'error');
+      return;
+    }
+
+    const blob = await response.blob();
+    const filename = getFilenameFromDisposition(
+      response.headers.get('content-disposition'),
+      `project_${appState.currentProject.id}_${branch}_latest_metrics.${format}`
+    );
+    triggerDownload(blob, filename);
+    showToast('Export ready', 'success');
+  } catch (error) {
+    showToast(getErrorMessage(error, 'Failed to export metrics'), 'error');
   } finally {
     hideLoading();
   }
@@ -635,7 +752,7 @@ async function deleteConnection(connectionId) {
     await loadConnections();
     
   } catch (error) {
-    showToast('Failed to delete connection', 'error');
+    showToast(getErrorMessage(error, 'Failed to delete connection'), 'error');
   } finally {
     hideLoading();
   }
@@ -647,6 +764,44 @@ async function deleteConnection(connectionId) {
 function showError(message, errorDiv) {
   errorDiv.textContent = message;
   errorDiv.classList.remove('hidden');
+}
+
+function getErrorMessage(error, fallback) {
+  if (!error) {
+    return fallback;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error.message) {
+    return error.message;
+  }
+  if (error.error) {
+    return error.error;
+  }
+  if (error.details && error.details.message) {
+    return error.details.message;
+  }
+  return fallback;
+}
+
+function getFilenameFromDisposition(disposition, fallback) {
+  if (!disposition) {
+    return fallback;
+  }
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  return match ? match[1] : fallback;
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 /**

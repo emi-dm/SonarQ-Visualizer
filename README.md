@@ -39,15 +39,21 @@ pip install -r backend/requirements.txt
 python backend/app.py init-db
 ```
 
-### 4. Start Backend Server
+### 4. Start Frontend Server (first)
 
 ```bash
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+npm run frontend
 ```
 
-### 5. Open Browser
+### 5. Start Backend Server and Open Browser
 
-Navigate to: **http://localhost:8000**
+```bash
+uvicorn backend.src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Navigate to: **http://localhost:8080**
+
+Note: The frontend is served separately from the backend. Start the frontend first on port 8080, then the API on port 8000.
 
 ## Requirements
 

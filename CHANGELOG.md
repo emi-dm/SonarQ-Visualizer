@@ -7,29 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- Initial project structure with backend and frontend directories
-- Database schema for connections, projects, metrics snapshots, and user preferences
-- FastAPI backend framework with REST API endpoints
-- Connection management (create, validate, list, update, delete)
-- Project synchronization from SonarQube instances
-- Metrics fetching and storage with historical tracking
-- Multi-project dashboard with aggregations
-- Interactive visualizations using Chart.js
-- Responsive frontend design for mobile, tablet, and desktop
-- Property-based testing with Hypothesis
-- Structured logging with JSON format
-- Comprehensive test suite (unit, integration, property-based)
+- Frontend served from port 8080 and launched before backend
 
-### Security
-
-- Token storage in browser localStorage (documented security consideration)
-- HTTPS requirement for SonarQube connections
-- Content Security Policy (CSP) headers implementation
-- Input validation to prevent SQL injection and XSS
-
-## [0.1.0] - TBD
+## [0.1.0] - 2026-02-06
 
 ### Summary
 
@@ -39,6 +21,18 @@ Initial MVP release with core functionality:
 - Project metrics fetching and display
 - Basic visualizations and dashboard
 - Offline capability with SQLite storage
+
+### Added
+
+- Export latest metrics snapshot as JSON or CSV
+- Project list debounced search and virtualized rendering for large lists
+- Documentation set (architecture, API, development, security)
+- CI pipeline for linting and tests
+- Pre-commit hooks for local linting
+
+### Fixed
+
+- Quickstart commands updated to use correct backend module path
 
 [Unreleased]: https://github.com/username/sonarq-visualizer/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/username/sonarq-visualizer/releases/tag/v0.1.0

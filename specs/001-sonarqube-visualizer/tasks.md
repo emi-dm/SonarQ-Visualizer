@@ -171,21 +171,21 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 **Purpose**: Improvements that affect multiple user stories and ensure production readiness
 
-- [ ] T079 [P] Create architecture documentation in docs/architecture.md with system design, component diagram, data flow per plan.md
-- [ ] T080 [P] Create API documentation in docs/api.md referencing contracts/api.yaml with usage examples
-- [ ] T081 [P] Create development guide in docs/development.md with setup instructions, testing guidelines, contribution workflow
-- [ ] T082 [P] Create security documentation in docs/security.md with threat model, token storage security, CSP implementation details per research.md
-- [ ] T083 [P] Implement export functionality in backend/src/api/metrics.py for CSV/JSON export per FR-013
-- [ ] T084 [P] Add export UI buttons in frontend with download handlers in frontend/js/app.js
-- [ ] T085 [P] Optimize frontend performance: implement debouncing (300ms) for search inputs, virtual scrolling for large project lists (>100 projects) per FR-033
-- [ ] T086 [P] Add comprehensive error messages for all user-facing errors following FR-009 clarity requirements
-- [ ] T087 Configure GitHub Actions CI pipeline in .github/workflows/ci.yml with three stages: lint (black, flake8, mypy, ESLint), unit+PBT tests (100 examples), integration tests
-- [ ] T088 Add pre-commit hooks configuration for local linting enforcement
+- [x] T079 [P] Create architecture documentation in docs/architecture.md with system design, component diagram, data flow per plan.md
+- [x] T080 [P] Create API documentation in docs/api.md referencing contracts/api.yaml with usage examples
+- [x] T081 [P] Create development guide in docs/development.md with setup instructions, testing guidelines, contribution workflow
+- [x] T082 [P] Create security documentation in docs/security.md with threat model, token storage security, CSP implementation details per research.md
+- [x] T083 [P] Implement export functionality in backend/src/api/metrics.py for CSV/JSON export per FR-013
+- [x] T084 [P] Add export UI buttons in frontend with download handlers in frontend/js/app.js
+- [x] T085 [P] Optimize frontend performance: implement debouncing (300ms) for search inputs, virtual scrolling for large project lists (>100 projects) per FR-033
+- [x] T086 [P] Add comprehensive error messages for all user-facing errors following FR-009 clarity requirements
+- [x] T087 Configure GitHub Actions CI pipeline in .github/workflows/ci.yml with three stages: lint (black, flake8, mypy, ESLint), unit+PBT tests (100 examples), integration tests
+- [x] T088 Add pre-commit hooks configuration for local linting enforcement
 - [ ] T089 Run full test suite and verify all tests pass: unit tests, property-based tests (500 examples), integration tests
-- [ ] T090 Validate quickstart.md by following all 5 steps on fresh environment and documenting any improvements
-- [ ] T091 Final code review and refactoring for consistency, removing TODOs and debug code
-- [ ] T092 Update CHANGELOG.md with all implemented features for v0.1.0 release
-- [ ] T093 Create v0.1.0 git tag and prepare release notes
+- [x] T090 Validate quickstart.md by following all 5 steps on fresh environment and documenting any improvements
+- [x] T091 Final code review and refactoring for consistency, removing TODOs and debug code
+- [x] T092 Update CHANGELOG.md with all implemented features for v0.1.0 release
+- [x] T093 Create v0.1.0 git tag and prepare release notes
 
 ---
 

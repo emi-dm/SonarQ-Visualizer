@@ -145,6 +145,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 /* Utility classes */
@@ -240,6 +241,31 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--spacing-lg);
+}
+
+.virtual-list {
+  position: relative;
+  height: 70vh;
+  overflow-y: auto;
+  display: block;
+}
+
+.virtual-spacer {
+  width: 100%;
+}
+
+.virtual-items {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.virtual-item {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding-bottom: var(--spacing-md);
 }
 
 .search-controls {
