@@ -1,0 +1,84 @@
+"""Metrics service for fetching and storing SonarQube metrics."""
+
+from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy.orm import Session
+
+from backend.src.db.repositories.connection_repository import ConnectionRepository
+from backend.src.db.repositories.metrics_repository import MetricsRepository
+from backend.src.db.repositories.project_repository import ProjectRepository
+from backend.src.models.metrics_snapshot import MetricsSnapshot
+from backend.src.services.sonarqube_client import SonarQubeClient
+from backend.src.utils.errors import InvalidAPIResponseError
+from backend.src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+def aggregate_metrics(snapshots: List[dict]) -> dict:
+    """Aggregate metrics snapshots for totals and averages."""
+    total_bugs = sum(s["bugs_count"] for s in snapshots)
+    total_vulnerabilities = sum(s["vulnerabilities_count"] for s in snapshots)
+    total_code_smells = sum(s["code_smells_count"] for s in snapshots)
+
+    coverage_values = [s["coverage_pct"] for s in snapshots if s.get("coverage_pct") is not None]
+    duplication_values = [s["duplications_pct"] for s in snapshots if s.get("duplications_pct") is not None]
+
+    avg_coverage = sum(coverage_values) / len(coverage_values) if coverage_values else None
+    avg_duplications = sum(duplication_values) / len(duplication_values) if duplication_values else None
+
+    return {
+        "total_bugs": total_bugs,
+        "total_vulnerabilities": total_vulnerabilities,
+        "total_code_smells": total_code_smells,
+        "avg_coverage": avg_coverage,
+        "avg_duplications": avg_duplications
+    }
+
+
+class MetricsService:
+    """Service for metrics operations."""
+
+    def __init__(self, db: Session):
+        self.db = db
+        self.connection_repo = ConnectionRepository(db)
+        self.project_repo = ProjectRepository(db)
+        self.metrics_repo = MetricsRepository(db)
+
+    def refresh_metrics(self, project_id: int, token: str, branch: str = "main") -> MetricsSnapshot:
+        project = self.project_repo.get_by_id(project_id)
+        connection = self.connection_repo.get_by_id(project.connection_id)
+
+        client = SonarQubeClient(connection.server_url, token)
+        try:
+            metrics_data = client.get_project_metrics(project.project_key, branch)
+        finally:
+            client.close()
+
+        analysis_date = metrics_data.get("analysis_date")
+        fetch_timestamp = datetime.utcnow()
+        if analysis_date and analysis_date > fetch_timestamp:
+            raise InvalidAPIResponseError("Analysis date is in the future")
+
+        snapshot = MetricsSnapshot(
+            project_id=project_id,
+            branch_name=branch,
+            analysis_date=analysis_date or fetch_timestamp,
+            fetch_timestamp=fetch_timestamp,
+            bugs_count=metrics_data["bugs_count"],
+            vulnerabilities_count=metrics_data["vulnerabilities_count"],
+            code_smells_count=metrics_data["code_smells_count"],
+            coverage_pct=metrics_data.get("coverage_pct"),
+            duplications_pct=metrics_data.get("duplications_pct"),
+            quality_gate_status=metrics_data["quality_gate_status"],
+            quality_gate_details=metrics_data.get("quality_gate_details"),
+            severity_breakdown=metrics_data.get("severity_breakdown"),
+            ncloc=metrics_data.get("ncloc")
+        )
+
+        return self.metrics_repo.create(snapshot)
+
+    def get_metrics(self, project_id: int, branch: str = "main", limit: int = 30) -> List[MetricsSnapshot]:
+        self.project_repo.get_by_id(project_id)
+        return self.metrics_repo.list_snapshots(project_id, branch, limit)

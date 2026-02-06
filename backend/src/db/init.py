@@ -73,6 +73,11 @@ def init_database(db_path: Optional[str] = None) -> None:
     conn = get_db_connection(str(db_file))
     try:
         conn.executescript(schema_sql)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(connections)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "organization" not in columns:
+            cursor.execute("ALTER TABLE connections ADD COLUMN organization TEXT")
         conn.commit()
         print(f"✓ Database initialized at {db_file}")
     except sqlite3.Error as e:

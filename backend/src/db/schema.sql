@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS connections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     server_url TEXT NOT NULL,
+    organization TEXT,
     server_version TEXT,
     is_active BOOLEAN NOT NULL DEFAULT 1,
     last_validated_at DATETIME,

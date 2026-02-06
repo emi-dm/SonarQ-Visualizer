@@ -17,6 +17,8 @@ from backend.src.utils.config import settings, get_cors_origins, get_csp_header
 from backend.src.utils.logger import get_logger
 from backend.src.api.health import router as health_router
 from backend.src.api.connections import router as connections_router
+from backend.src.api.projects import router as projects_router
+from backend.src.api.metrics import router as metrics_router
 
 logger = get_logger(__name__)
 
@@ -64,6 +66,8 @@ app.add_middleware(CSPMiddleware)
 # Register API routers
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(connections_router, prefix="/api/v1")
+app.include_router(projects_router, prefix="/api/v1")
+app.include_router(metrics_router, prefix="/api/v1")
 
 # Mount static files for frontend
 frontend_path = Path(__file__).parent.parent.parent.parent / "frontend"

@@ -28,6 +28,7 @@ class ConnectionCreate(BaseModel):
     """Request model for creating a connection."""
     name: str = Field(..., min_length=1, max_length=255)
     server_url: str = Field(..., min_length=1)
+    organization: Optional[str] = None
     token: str = Field(..., min_length=1)
     validate: bool = Field(default=True)
     
@@ -48,6 +49,7 @@ class ConnectionUpdate(BaseModel):
     """Request model for updating a connection."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     server_url: Optional[str] = Field(None, min_length=1)
+    organization: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -61,6 +63,7 @@ class ConnectionResponse(BaseModel):
     id: int
     name: str
     server_url: str
+    organization: Optional[str]
     server_version: Optional[str]
     is_active: bool
     last_validated_at: Optional[datetime]
@@ -126,6 +129,7 @@ async def create_connection(
         created_connection, validation_result = service.create_connection(
             name=connection.name,
             server_url=connection.server_url,
+            organization=connection.organization,
             token=connection.token,
             validate=connection.validate
         )
@@ -256,6 +260,7 @@ async def update_connection(
             connection_id=connection_id,
             name=connection.name,
             server_url=connection.server_url,
+            organization=connection.organization,
             is_active=connection.is_active
         )
         

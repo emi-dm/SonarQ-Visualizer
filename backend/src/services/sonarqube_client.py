@@ -4,9 +4,11 @@ This module provides a client for interacting with SonarQube REST API,
 including token authentication, timeout handling, and exponential backoff retry.
 """
 
+import json
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from time import sleep
+from datetime import datetime
 
 from backend.src.utils.config import settings
 from backend.src.utils.errors import (
@@ -176,6 +178,72 @@ class SonarQubeClient:
             Dict[str, Any]: System information
         """
         return self._make_request('GET', '/api/system/info')
+
+    def get_projects(self, page_size: int = 100, organization: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Fetch all projects from SonarQube with pagination."""
+        projects: List[Dict[str, Any]] = []
+        page = 1
+
+        while True:
+            params = {"p": page, "ps": page_size}
+            if organization:
+                params["organization"] = organization
+            response = self._make_request(
+                "GET",
+                "/api/projects/search",
+                params=params
+            )
+            parsed = parse_projects_response(response)
+            projects.extend(parsed)
+
+            paging = response.get("paging", {})
+            total = paging.get("total", len(projects))
+            if len(projects) >= total:
+                break
+            page += 1
+
+        return projects
+
+    def get_project_metrics(self, project_key: str, branch: str = "main") -> Dict[str, Any]:
+        """Fetch metrics for a project from SonarQube."""
+        metric_keys = [
+            "bugs",
+            "vulnerabilities",
+            "code_smells",
+            "coverage",
+            "duplicated_lines_density",
+            "ncloc",
+            "alert_status",
+            "quality_gate_status",
+            "quality_gate_details",
+            "blocker_violations",
+            "critical_violations",
+            "major_violations",
+            "minor_violations",
+            "info_violations"
+        ]
+
+        params: Dict[str, Any] = {
+            "component": project_key,
+            "metricKeys": ",".join(metric_keys)
+        }
+        if branch:
+            params["branch"] = branch
+
+        response = self._make_request("GET", "/api/measures/component", params=params)
+        return parse_measures_response(response)
+
+    def get_project_branches(self, project_key: str) -> List[Dict[str, Any]]:
+        """Fetch project branches from SonarQube."""
+        response = self._make_request(
+            "GET",
+            "/api/project_branches/list",
+            params={"project": project_key}
+        )
+        branches = response.get("branches")
+        if not isinstance(branches, list):
+            raise InvalidAPIResponseError("Invalid branches response", {"response": response})
+        return branches
     
     def close(self) -> None:
         """Close the HTTP session."""
@@ -205,3 +273,110 @@ def validate_connection_url(url: str) -> bool:
         raise ValueError("Invalid URL format")
     
     return True
+
+
+def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=None)
+    except ValueError as e:
+        raise InvalidAPIResponseError("Invalid date format", {"value": value})
+
+
+def _parse_int(metric: str, value: Optional[str]) -> int:
+    if value is None:
+        return 0
+    try:
+        parsed = int(float(value))
+    except (TypeError, ValueError):
+        raise InvalidAPIResponseError("Invalid integer value", {"metric": metric, "value": value})
+    if parsed < 0:
+        raise InvalidAPIResponseError("Negative value not allowed", {"metric": metric, "value": value})
+    return parsed
+
+
+def _parse_float(metric: str, value: Optional[str]) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        raise InvalidAPIResponseError("Invalid float value", {"metric": metric, "value": value})
+    if parsed < 0 or parsed > 100:
+        raise InvalidAPIResponseError("Percentage out of bounds", {"metric": metric, "value": value})
+    return parsed
+
+
+def parse_projects_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Parse SonarQube projects response to normalized format."""
+    components = response.get("components")
+    if not isinstance(components, list):
+        raise InvalidAPIResponseError("Invalid projects response", {"response": response})
+
+    parsed: List[Dict[str, Any]] = []
+    for component in components:
+        project_key = component.get("key")
+        name = component.get("name")
+        if not project_key or not name:
+            parsed.append({})
+            continue
+
+        parsed.append({
+            "project_key": project_key,
+            "name": name,
+            "description": component.get("description"),
+            "last_analysis_date": _parse_datetime(component.get("analysisDate"))
+        })
+
+    return parsed
+
+
+def parse_measures_response(response: Dict[str, Any]) -> Dict[str, Any]:
+    """Parse SonarQube measures response to normalized format."""
+    component = response.get("component")
+    if not isinstance(component, dict):
+        raise InvalidAPIResponseError("Invalid measures response", {"response": response})
+
+    measures = component.get("measures")
+    if not isinstance(measures, list):
+        raise InvalidAPIResponseError("Invalid measures response", {"response": response})
+
+    measures_map = {m.get("metric"): m.get("value") for m in measures if isinstance(m, dict)}
+
+    quality_gate_status = measures_map.get("alert_status") or measures_map.get("quality_gate_status")
+    if quality_gate_status is None:
+        quality_gate_status = "OK"
+    if quality_gate_status not in {"OK", "WARN", "ERROR"}:
+        raise InvalidAPIResponseError("Invalid quality gate status", {"value": quality_gate_status})
+
+    severity_breakdown = None
+    if any(k in measures_map for k in ["blocker_violations", "critical_violations", "major_violations", "minor_violations", "info_violations"]):
+        severity_breakdown = {
+            "blocker": _parse_int("blocker_violations", measures_map.get("blocker_violations")),
+            "critical": _parse_int("critical_violations", measures_map.get("critical_violations")),
+            "major": _parse_int("major_violations", measures_map.get("major_violations")),
+            "minor": _parse_int("minor_violations", measures_map.get("minor_violations")),
+            "info": _parse_int("info_violations", measures_map.get("info_violations"))
+        }
+
+    quality_gate_details = measures_map.get("quality_gate_details")
+    if isinstance(quality_gate_details, str):
+        try:
+            quality_gate_details = json.loads(quality_gate_details)
+        except json.JSONDecodeError:
+            raise InvalidAPIResponseError("Invalid quality gate details JSON", {"value": quality_gate_details})
+
+    return {
+        "analysis_date": _parse_datetime(component.get("analysisDate")),
+        "bugs_count": _parse_int("bugs", measures_map.get("bugs")),
+        "vulnerabilities_count": _parse_int("vulnerabilities", measures_map.get("vulnerabilities")),
+        "code_smells_count": _parse_int("code_smells", measures_map.get("code_smells")),
+        "coverage_pct": _parse_float("coverage", measures_map.get("coverage")),
+        "duplications_pct": _parse_float("duplicated_lines_density", measures_map.get("duplicated_lines_density")),
+        "quality_gate_status": quality_gate_status,
+        "quality_gate_details": quality_gate_details if isinstance(quality_gate_details, dict) else None,
+        "severity_breakdown": severity_breakdown,
+        "ncloc": _parse_int("ncloc", measures_map.get("ncloc")) if measures_map.get("ncloc") is not None else None
+    }

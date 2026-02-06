@@ -39,6 +39,11 @@
                 <div class="search-controls">
                     <input type="text" id="project-search" placeholder="Search projects..." class="input">
                 </div>
+                <div class="pagination-controls" id="projects-pagination">
+                    <button id="projects-prev-btn" class="btn btn-text">&larr; Prev</button>
+                    <span id="projects-page-info" class="text-secondary">Page 1</span>
+                    <button id="projects-next-btn" class="btn btn-text">Next &rarr;</button>
+                </div>
                 <div id="projects-list" class="projects-grid">
                     <!-- Project cards will be inserted here -->
                 </div>
@@ -49,8 +54,14 @@
                 <button id="back-to-projects-btn" class="btn btn-text">&larr; Back to Projects</button>
                 <div class="section-header">
                     <h2 id="project-detail-title">Project Details</h2>
-                    <button id="refresh-metrics-btn" class="btn btn-secondary">Refresh Metrics</button>
+                    <div class="detail-actions">
+                        <select id="branch-selector" class="input">
+                            <option value="main">main</option>
+                        </select>
+                        <button id="refresh-metrics-btn" class="btn btn-secondary">Refresh Metrics</button>
+                    </div>
                 </div>
+                <div id="project-staleness" class="text-secondary text-small"></div>
                 <div id="project-metrics" class="metrics-container">
                     <!-- Metrics will be inserted here -->
                 </div>
@@ -89,6 +100,12 @@
                     <label for="connection-url">Server URL</label>
                     <input type="url" id="connection-url" name="server_url" required 
                            placeholder="https://sonarqube.company.com" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="connection-organization">Organization (SonarCloud)</label>
+                    <input type="text" id="connection-organization" name="organization"
+                           placeholder="my-org-key" class="input">
+                    <small>Required for SonarCloud project sync</small>
                 </div>
                 <div class="form-group">
                     <label for="connection-token">Token</label>

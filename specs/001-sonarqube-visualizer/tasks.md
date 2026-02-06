@@ -100,34 +100,34 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 ### Tests for User Story 2 ✅
 
-- [ ] T038 [P] [US2] Unit test for Project model in backend/tests/unit/models/test_project.py with validation rules
-- [ ] T039 [P] [US2] Unit test for MetricsSnapshot model in backend/tests/unit/models/test_metrics_snapshot.py with boundary validation (FR-032)
-- [ ] T040 [P] [US2] Property-based test for metrics aggregation in backend/tests/property/test_metrics_aggregation.py using Hypothesis (various metric ranges per research.md)
-- [ ] T041 [P] [US2] Property-based test for SonarQube API response parsing in backend/tests/property/test_sonarqube_parsing.py with varied JSON structures
-- [ ] T042 [P] [US2] Integration test for project sync endpoint in backend/tests/integration/test_projects_sync.py with mock SonarQube API
-- [ ] T043 [P] [US2] Integration test for metrics refresh flow in backend/tests/integration/test_metrics_refresh.py with partial failure scenarios (FR-024)
-- [ ] T043b [P] [US2] Integration test for SonarQube edition compatibility in backend/tests/integration/test_sonarqube_editions.py with mock Community (8.x+) and Enterprise (9.x+) API responses per FR-012
+- [x] T038 [P] [US2] Unit test for Project model in backend/tests/unit/models/test_project.py with validation rules
+- [x] T039 [P] [US2] Unit test for MetricsSnapshot model in backend/tests/unit/models/test_metrics_snapshot.py with boundary validation (FR-032)
+- [x] T040 [P] [US2] Property-based test for metrics aggregation in backend/tests/property/test_metrics_aggregation.py using Hypothesis (various metric ranges per research.md)
+- [x] T041 [P] [US2] Property-based test for SonarQube API response parsing in backend/tests/property/test_sonarqube_parsing.py with varied JSON structures
+- [x] T042 [P] [US2] Integration test for project sync endpoint in backend/tests/integration/test_projects_sync.py with mock SonarQube API
+- [x] T043 [P] [US2] Integration test for metrics refresh flow in backend/tests/integration/test_metrics_refresh.py with partial failure scenarios (FR-024)
+- [x] T043b [P] [US2] Integration test for SonarQube edition compatibility in backend/tests/integration/test_sonarqube_editions.py with mock Community (8.x+) and Enterprise (9.x+) API responses per FR-012
 
 ### Implementation for User Story 2
 
-- [ ] T044 [P] [US2] Create Project SQLAlchemy model in backend/src/models/project.py with fields: id, connection_id (FK), project_key, name, description, last_analysis_date, timestamps
-- [ ] T045 [P] [US2] Create MetricsSnapshot SQLAlchemy model in backend/src/models/metrics_snapshot.py with all metrics fields per data-model.md including JSON fields for severity_breakdown and quality_gate_details
-- [ ] T046 [P] [US2] Create project repository in backend/src/db/repositories/project_repository.py with CRUD operations and pagination support
-- [ ] T047 [P] [US2] Create metrics repository in backend/src/db/repositories/metrics_repository.py with snapshot storage and retrieval operations
-- [ ] T048 [US2] Extend SonarQube API client in backend/src/services/sonarqube_client.py with /api/projects/search, /api/measures/component, /api/project_branches/list endpoints
-- [ ] T049 [US2] Implement metrics parsing and validation in backend/src/services/sonarqube_client.py with boundary checks (FR-032) and malformed response handling (FR-028)
-- [ ] T050 [US2] Implement project service in backend/src/services/project_service.py with sync_projects_from_sonarqube method handling partial failures per FR-024
-- [ ] T051 [US2] Implement metrics service in backend/src/services/metrics_service.py with fetch_and_store_metrics, calculate_staleness (FR-027), get_historical_metrics operations
-- [ ] T052 [US2] Create projects API router in backend/src/api/projects.py with GET /connections/{id}/projects (with pagination FR-030), POST /connections/{id}/projects/sync, GET /projects/{id}, GET /projects/{id}/branches
-- [ ] T053 [US2] Create metrics API router in backend/src/api/metrics.py with GET /projects/{id}/metrics, POST /projects/{id}/metrics/refresh
-- [ ] T054 [US2] Implement rate limiting error handling (FR-020) and token expiration detection (FR-031) in backend/src/services/sonarqube_client.py
-- [ ] T055 [US2] Add structured logging for all metrics operations in backend/src/services/metrics_service.py per FR-034
-- [ ] T056 [US2] Create project list UI in frontend/index.html with search/filter inputs and sync button
-- [ ] T057 [US2] Implement project list rendering in frontend/js/app.js with pagination controls and staleness indicators (FR-019, FR-027)
-- [ ] T058 [US2] Create project detail view in frontend/index.html with metrics display table and refresh button
-- [ ] T059 [US2] Implement metrics display logic in frontend/js/app.js with quality gate status highlighting, severity breakdown, and historical comparison
-- [ ] T060 [US2] Add branch selector UI in frontend for multi-branch project support
-- [ ] T061 [US2] Style project list and metrics display in frontend/css/styles.css with responsive tables, status indicators, and mobile-friendly layout
+- [x] T044 [P] [US2] Create Project SQLAlchemy model in backend/src/models/project.py with fields: id, connection_id (FK), project_key, name, description, last_analysis_date, timestamps
+- [x] T045 [P] [US2] Create MetricsSnapshot SQLAlchemy model in backend/src/models/metrics_snapshot.py with all metrics fields per data-model.md including JSON fields for severity_breakdown and quality_gate_details
+- [x] T046 [P] [US2] Create project repository in backend/src/db/repositories/project_repository.py with CRUD operations and pagination support
+- [x] T047 [P] [US2] Create metrics repository in backend/src/db/repositories/metrics_repository.py with snapshot storage and retrieval operations
+- [x] T048 [US2] Extend SonarQube API client in backend/src/services/sonarqube_client.py with /api/projects/search, /api/measures/component, /api/project_branches/list endpoints
+- [x] T049 [US2] Implement metrics parsing and validation in backend/src/services/sonarqube_client.py with boundary checks (FR-032) and malformed response handling (FR-028)
+- [x] T050 [US2] Implement project service in backend/src/services/project_service.py with sync_projects_from_sonarqube method handling partial failures per FR-024
+- [x] T051 [US2] Implement metrics service in backend/src/services/metrics_service.py with fetch_and_store_metrics, calculate_staleness (FR-027), get_historical_metrics operations
+- [x] T052 [US2] Create projects API router in backend/src/api/projects.py with GET /connections/{id}/projects (with pagination FR-030), POST /connections/{id}/projects/sync, GET /projects/{id}, GET /projects/{id}/branches
+- [x] T053 [US2] Create metrics API router in backend/src/api/metrics.py with GET /projects/{id}/metrics, POST /projects/{id}/metrics/refresh
+- [x] T054 [US2] Implement rate limiting error handling (FR-020) and token expiration detection (FR-031) in backend/src/services/sonarqube_client.py
+- [x] T055 [US2] Add structured logging for all metrics operations in backend/src/services/metrics_service.py per FR-034
+- [x] T056 [US2] Create project list UI in frontend/index.html with search/filter inputs and sync button
+- [x] T057 [US2] Implement project list rendering in frontend/js/app.js with pagination controls and staleness indicators (FR-019, FR-027)
+- [x] T058 [US2] Create project detail view in frontend/index.html with metrics display table and refresh button
+- [x] T059 [US2] Implement metrics display logic in frontend/js/app.js with quality gate status highlighting, severity breakdown, and historical comparison
+- [x] T060 [US2] Add branch selector UI in frontend for multi-branch project support
+- [x] T061 [US2] Style project list and metrics display in frontend/css/styles.css with responsive tables, status indicators, and mobile-friendly layout
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - users can connect to SonarQube, sync projects, and view metrics
 

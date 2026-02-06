@@ -23,7 +23,13 @@ class ConnectionRepository:
         """
         self.db = db
     
-    def create(self, name: str, server_url: str, server_version: Optional[str] = None) -> Connection:
+    def create(
+        self,
+        name: str,
+        server_url: str,
+        server_version: Optional[str] = None,
+        organization: Optional[str] = None
+    ) -> Connection:
         """Create a new connection.
         
         Args:
@@ -42,7 +48,8 @@ class ConnectionRepository:
             connection = Connection(
                 name=name,
                 server_url=server_url,
-                server_version=server_version
+                server_version=server_version,
+                organization=organization
             )
             
             self.db.add(connection)
@@ -109,6 +116,7 @@ class ConnectionRepository:
         name: Optional[str] = None,
         server_url: Optional[str] = None,
         server_version: Optional[str] = None,
+        organization: Optional[str] = None,
         is_active: Optional[bool] = None
     ) -> Connection:
         """Update connection fields.
@@ -137,6 +145,8 @@ class ConnectionRepository:
                 connection.server_url = server_url
             if server_version is not None:
                 connection.server_version = server_version
+            if organization is not None:
+                connection.organization = organization
             if is_active is not None:
                 connection.is_active = is_active
             

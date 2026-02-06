@@ -7,7 +7,11 @@
 const appState = {
   connections: [],
   currentConnection: null,
-  currentProject: null
+  currentProject: null,
+  projects: [],
+  projectPage: 1,
+  projectPageSize: 20,
+  totalProjectPages: 1
 };
 
 /**
@@ -23,12 +27,58 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initializeApp() {
   // Setup modal event listeners
   setupModalListeners();
+  setupProjectListeners();
   
   // Load connections
   await loadConnections();
+  showSection('connections');
   
   showLoading();
   hideLoading();
+}
+
+function setupProjectListeners() {
+  const syncProjectsBtn = document.getElementById('sync-projects-btn');
+  const projectSearch = document.getElementById('project-search');
+  const backToProjectsBtn = document.getElementById('back-to-projects-btn');
+  const refreshMetricsBtn = document.getElementById('refresh-metrics-btn');
+  const prevBtn = document.getElementById('projects-prev-btn');
+  const nextBtn = document.getElementById('projects-next-btn');
+  const branchSelector = document.getElementById('branch-selector');
+
+  syncProjectsBtn.addEventListener('click', async () => {
+    await syncProjects();
+  });
+
+  projectSearch.addEventListener('input', () => {
+    renderProjects(appState.projects);
+  });
+
+  backToProjectsBtn.addEventListener('click', () => {
+    showSection('projects');
+  });
+
+  refreshMetricsBtn.addEventListener('click', async () => {
+    await refreshMetrics();
+  });
+
+  prevBtn.addEventListener('click', async () => {
+    if (appState.projectPage > 1) {
+      await loadProjects(appState.currentConnection.id, appState.projectPage - 1);
+    }
+  });
+
+  nextBtn.addEventListener('click', async () => {
+    if (appState.projectPage < appState.totalProjectPages) {
+      await loadProjects(appState.currentConnection.id, appState.projectPage + 1);
+    }
+  });
+
+  branchSelector.addEventListener('change', async () => {
+    if (appState.currentProject) {
+      await loadProjectMetrics(appState.currentProject.id, branchSelector.value);
+    }
+  });
 }
 
 /**
@@ -88,6 +138,7 @@ function openConnectionModal(connection = null) {
     title.textContent = 'Edit Connection';
     document.getElementById('connection-name').value = connection.name;
     document.getElementById('connection-url').value = connection.server_url;
+    document.getElementById('connection-organization').value = connection.organization || '';
     form.dataset.editId = connection.id;
     
     // Get token from storage
@@ -120,6 +171,7 @@ async function testConnection() {
   const serverUrl = document.getElementById('connection-url').value.trim();
   const token = document.getElementById('connection-token').value.trim();
   const errorDiv = document.getElementById('form-error');
+  const organization = document.getElementById('connection-organization').value.trim();
   
   if (!name || !serverUrl || !token) {
     showError('Please fill in all fields', errorDiv);
@@ -133,6 +185,7 @@ async function testConnection() {
     const response = await connectionsAPI.create({
       name: `${name}_test_${Date.now()}`,
       server_url: serverUrl,
+      organization: organization || null,
       token: token,
       validate: true
     });
@@ -163,6 +216,7 @@ async function saveConnection() {
   const errorDiv = document.getElementById('form-error');
   const editId = form.dataset.editId;
   
+  const organization = document.getElementById('connection-organization').value.trim();
   showLoading();
   
   try {
@@ -170,9 +224,9 @@ async function saveConnection() {
       // Update existing connection
       const connection = await connectionsAPI.update(parseInt(editId), {
         name: name,
-        server_url: serverUrl
+        server_url: serverUrl,
+        organization: organization || null
       });
-      
       // Update token in storage
       setInStorage(`connection_token_${connection.id}`, token);
       
@@ -182,6 +236,7 @@ async function saveConnection() {
       const connection = await connectionsAPI.create({
         name: name,
         server_url: serverUrl,
+        organization: organization || null,
         token: token,
         validate: false  // Don't validate on create, user can test first
       });
@@ -261,16 +316,241 @@ function renderConnections(connections) {
       </div>
       <div class="card-body">
         <p class="text-secondary">${escapeHtml(conn.server_url)}</p>
+        ${conn.organization ? `<p class="text-small">Org: ${escapeHtml(conn.organization)}</p>` : ''}
         ${conn.server_version ? `<p class="text-small">Version: ${escapeHtml(conn.server_version)}</p>` : ''}
         ${conn.last_validated_at ? `<p class="text-small">Last validated: ${formatDate(conn.last_validated_at)}</p>` : '<p class="text-small text-warning">Not validated</p>'}
       </div>
       <div class="card-actions">
+        <button class="btn btn-primary" onclick="openProjects(${conn.id})">Projects</button>
         <button class="btn btn-secondary" onclick="validateConnection(${conn.id})">Validate</button>
         <button class="btn btn-text" onclick="editConnection(${conn.id})">Edit</button>
         <button class="btn btn-text text-error" onclick="deleteConnection(${conn.id})">Delete</button>
       </div>
     </div>
   `).join('');
+}
+
+async function openProjects(connectionId) {
+  const connection = appState.connections.find(conn => conn.id === connectionId);
+  if (!connection) {
+    showToast('Connection not found', 'error');
+    return;
+  }
+  appState.currentConnection = connection;
+  appState.projectPage = 1;
+  await loadProjects(connectionId, 1);
+  showSection('projects');
+}
+
+async function syncProjects() {
+  if (!appState.currentConnection) {
+    showToast('Select a connection first', 'error');
+    return;
+  }
+
+  const token = getFromStorage(`connection_token_${appState.currentConnection.id}`);
+  if (!token) {
+    showToast('No token found for this connection', 'error');
+    return;
+  }
+
+  showLoading();
+  try {
+    const result = await projectsAPI.sync(appState.currentConnection.id, token);
+    const message = result.failed_count > 0
+      ? `Synced with ${result.failed_count} failed projects`
+      : 'Projects synced successfully';
+    showToast(message, result.failed_count > 0 ? 'warning' : 'success');
+    await loadProjects(appState.currentConnection.id, appState.projectPage);
+  } catch (error) {
+    showToast(error.message || 'Failed to sync projects', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function loadProjects(connectionId, page = 1) {
+  showLoading();
+  try {
+    const response = await projectsAPI.list(connectionId, {
+      page,
+      page_size: appState.projectPageSize,
+      include_metrics: false
+    });
+
+    appState.projects = response.projects;
+    appState.projectPage = response.pagination.page;
+    appState.totalProjectPages = response.pagination.total_pages;
+
+    document.getElementById('projects-page-info').textContent =
+      `Page ${response.pagination.page} of ${response.pagination.total_pages}`;
+
+    renderProjects(response.projects);
+  } catch (error) {
+    showToast('Failed to load projects', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderProjects(projects) {
+  const container = document.getElementById('projects-list');
+  const searchValue = document.getElementById('project-search').value.toLowerCase();
+
+  const filtered = projects.filter(project => {
+    const name = project.name.toLowerCase();
+    const key = project.project_key.toLowerCase();
+    return name.includes(searchValue) || key.includes(searchValue);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>No projects found. Sync projects to load data.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(project => `
+    <div class="card" data-project-id="${project.id}">
+      <div class="card-header">
+        <h3>${escapeHtml(project.name)}</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary">${escapeHtml(project.project_key)}</p>
+        ${project.description ? `<p class="text-small">${escapeHtml(project.description)}</p>` : ''}
+        ${project.last_analysis_date ? `<p class="text-small">Last analysis: ${formatDate(project.last_analysis_date)}</p>` : '<p class="text-small text-warning">No analysis data</p>'}
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-secondary" onclick="openProjectDetail(${project.id})">View Metrics</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openProjectDetail(projectId) {
+  showLoading();
+  try {
+    const project = await projectsAPI.getById(projectId, true);
+    appState.currentProject = project;
+
+    document.getElementById('project-detail-title').textContent = project.name;
+    updateBranchSelector(project.branches || ['main']);
+    await loadProjectMetrics(projectId, document.getElementById('branch-selector').value);
+    showSection('project-detail');
+  } catch (error) {
+    showToast('Failed to load project details', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function updateBranchSelector(branches) {
+  const selector = document.getElementById('branch-selector');
+  const safeBranches = branches.length ? branches : ['main'];
+  selector.innerHTML = safeBranches.map(branch => `<option value="${branch}">${branch}</option>`).join('');
+}
+
+async function loadProjectMetrics(projectId, branch = 'main') {
+  showLoading();
+  try {
+    const response = await metricsAPI.getMetrics(projectId, branch, 30);
+    const snapshots = response.snapshots;
+
+    renderMetricsTable(snapshots);
+    updateStaleness(snapshots[0]);
+  } catch (error) {
+    showToast('Failed to load metrics', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderMetricsTable(snapshots) {
+  const container = document.getElementById('project-metrics');
+  if (!snapshots || snapshots.length === 0) {
+    container.innerHTML = '<p class="text-secondary">No metrics snapshots yet.</p>';
+    return;
+  }
+
+  const latest = snapshots[0];
+  container.innerHTML = `
+    <table class="metrics-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Bugs</td><td>${latest.bugs_count}</td></tr>
+        <tr><td>Vulnerabilities</td><td>${latest.vulnerabilities_count}</td></tr>
+        <tr><td>Code Smells</td><td>${latest.code_smells_count}</td></tr>
+        <tr><td>Coverage</td><td>${latest.coverage_pct ?? 'N/A'}%</td></tr>
+        <tr><td>Duplications</td><td>${latest.duplications_pct ?? 'N/A'}%</td></tr>
+        <tr><td>Quality Gate</td><td>${latest.quality_gate_status}</td></tr>
+        <tr><td>NCLOC</td><td>${latest.ncloc ?? 'N/A'}</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function updateStaleness(latestSnapshot) {
+  const stalenessDiv = document.getElementById('project-staleness');
+  if (!latestSnapshot) {
+    stalenessDiv.textContent = '';
+    return;
+  }
+  const fetchTime = new Date(latestSnapshot.fetch_timestamp);
+  const diffHours = Math.floor((Date.now() - fetchTime.getTime()) / (1000 * 60 * 60));
+  if (diffHours >= 24) {
+    stalenessDiv.innerHTML = `<span class="staleness-badge">Stale: ${diffHours}h ago</span>`;
+  } else {
+    stalenessDiv.textContent = `Last refreshed ${diffHours}h ago`;
+  }
+}
+
+async function refreshMetrics() {
+  if (!appState.currentProject || !appState.currentConnection) {
+    showToast('Select a project first', 'error');
+    return;
+  }
+  const token = getFromStorage(`connection_token_${appState.currentConnection.id}`);
+  if (!token) {
+    showToast('No token found for this connection', 'error');
+    return;
+  }
+
+  const branch = document.getElementById('branch-selector').value;
+  showLoading();
+  try {
+    await metricsAPI.refresh(appState.currentProject.id, token, branch);
+    showToast('Metrics refreshed', 'success');
+    await loadProjectMetrics(appState.currentProject.id, branch);
+  } catch (error) {
+    showToast(error.message || 'Failed to refresh metrics', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function showSection(section) {
+  const connectionsSection = document.getElementById('connections-section');
+  const projectsSection = document.getElementById('projects-section');
+  const projectDetailSection = document.getElementById('project-detail-section');
+
+  connectionsSection.classList.add('hidden');
+  projectsSection.classList.add('hidden');
+  projectDetailSection.classList.add('hidden');
+
+  if (section === 'connections') {
+    connectionsSection.classList.remove('hidden');
+  } else if (section === 'projects') {
+    projectsSection.classList.remove('hidden');
+  } else if (section === 'project-detail') {
+    projectDetailSection.classList.remove('hidden');
+  }
 }
 
 /**

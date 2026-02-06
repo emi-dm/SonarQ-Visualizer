@@ -28,6 +28,7 @@ class ConnectionService:
         self,
         name: str,
         server_url: str,
+        organization: Optional[str],
         token: str,
         validate: bool = True
     ) -> tuple[Connection, Optional[dict]]:
@@ -65,7 +66,8 @@ class ConnectionService:
         connection = self.repository.create(
             name=name,
             server_url=server_url,
-            server_version=server_version
+            server_version=server_version,
+            organization=organization
         )
         
         # Update validation timestamp if validated
@@ -144,6 +146,7 @@ class ConnectionService:
         connection_id: int,
         name: Optional[str] = None,
         server_url: Optional[str] = None,
+        organization: Optional[str] = None,
         is_active: Optional[bool] = None
     ) -> Connection:
         """Update connection details.
@@ -165,6 +168,7 @@ class ConnectionService:
             connection_id=connection_id,
             name=name,
             server_url=server_url,
+            organization=organization,
             is_active=is_active
         )
     

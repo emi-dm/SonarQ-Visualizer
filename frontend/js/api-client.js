@@ -127,3 +127,47 @@ const healthAPI = {
     return apiFetch('/health');
   }
 };
+
+/**
+ * API client for projects
+ */
+const projectsAPI = {
+  async list(connectionId, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const suffix = query ? `?${query}` : '';
+    return apiFetch(`/connections/${connectionId}/projects${suffix}`);
+  },
+
+  async sync(connectionId, token) {
+    return apiFetch(`/connections/${connectionId}/projects/sync`, {
+      method: 'POST',
+      body: JSON.stringify({ token })
+    });
+  },
+
+  async getById(projectId, includeMetrics = false) {
+    const suffix = includeMetrics ? '?include_metrics=true' : '';
+    return apiFetch(`/projects/${projectId}${suffix}`);
+  },
+
+  async getBranches(projectId) {
+    return apiFetch(`/projects/${projectId}/branches`);
+  }
+};
+
+/**
+ * API client for metrics
+ */
+const metricsAPI = {
+  async getMetrics(projectId, branch = 'main', limit = 30) {
+    const params = new URLSearchParams({ branch, limit }).toString();
+    return apiFetch(`/projects/${projectId}/metrics?${params}`);
+  },
+
+  async refresh(projectId, token, branch = 'main') {
+    return apiFetch(`/projects/${projectId}/metrics/refresh`, {
+      method: 'POST',
+      body: JSON.stringify({ token, branch })
+    });
+  }
+};

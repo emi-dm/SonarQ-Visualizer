@@ -23,6 +23,7 @@ class Connection(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False, unique=True)
     server_url = Column(String(512), nullable=False)
+    organization = Column(String(255), nullable=True)
     server_version = Column(String(50), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     last_validated_at = Column(DateTime, nullable=True)
@@ -81,6 +82,15 @@ class Connection(Base):
         
         # Remove trailing slash
         return server_url.rstrip('/')
+
+    @validates('organization')
+    def validate_organization(self, key: str, organization: str) -> str:
+        if organization is None:
+            return organization
+        trimmed = organization.strip()
+        if not trimmed:
+            raise ValueError("Organization cannot be empty")
+        return trimmed
     
     def __repr__(self) -> str:
         """String representation of Connection."""
