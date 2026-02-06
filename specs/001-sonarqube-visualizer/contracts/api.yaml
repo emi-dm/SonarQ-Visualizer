@@ -1,0 +1,781 @@
+openapi: 3.0.3
+info:
+  title: SonarQube Report Visualizer API
+  description: REST API for managing SonarQube connections, projects, and metrics visualization
+  version: 0.1.0
+  contact:
+    name: API Support
+    email: support@sonarq-visualizer.local
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: http://127.0.0.1:8000/api/v1
+    description: Localhost alternative
+
+tags:
+  - name: connections
+    description: SonarQube connection management
+  - name: projects
+    description: Project management and listing
+  - name: metrics
+    description: Quality metrics and snapshots
+  - name: dashboard
+    description: Multi-project dashboard aggregation
+  - name: health
+    description: API health and status
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Health check endpoint
+      description: Returns API health status and version
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  version:
+                    type: string
+                    example: "0.1.0"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /connections:
+    get:
+      tags: [connections]
+      summary: List all connections
+      description: Retrieve list of all SonarQube connections
+      responses:
+        '200':
+          description: List of connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Connection'
+    
+    post:
+      tags: [connections]
+      summary: Create new connection
+      description: Create and optionally validate a new SonarQube connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, server_url, token]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  example: "Production SonarQube"
+                server_url:
+                  type: string
+                  format: uri
+                  example: "https://sonarqube.company.com"
+                token:
+                  type: string
+                  description: SonarQube authentication token (not stored, used for validation)
+                  example: "squ_abc123..."
+                validate:
+                  type: boolean
+                  default: true
+                  description: Whether to validate connection before saving
+      responses:
+        '201':
+          description: Connection created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication failed - invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Connection validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /connections/{connectionId}:
+    parameters:
+      - name: connectionId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Connection ID
+    
+    get:
+      tags: [connections]
+      summary: Get connection details
+      responses:
+        '200':
+          description: Connection details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+        '404':
+          description: Connection not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      tags: [connections]
+      summary: Update connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                server_url:
+                  type: string
+                  format: uri
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Connection updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+        '404':
+          description: Connection not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      tags: [connections]
+      summary: Delete connection
+      description: Delete connection and optionally cascade delete projects and metrics
+      parameters:
+        - name: cascade
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Whether to delete associated projects and metrics
+      responses:
+        '204':
+          description: Connection deleted successfully
+        '404':
+          description: Connection not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Cannot delete - has associated projects (cascade=false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /connections/{connectionId}/validate:
+    parameters:
+      - name: connectionId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    post:
+      tags: [connections]
+      summary: Validate connection
+      description: Test connection to SonarQube server and retrieve server info
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: SonarQube authentication token
+      responses:
+        '200':
+          description: Connection valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "valid"
+                  server_version:
+                    type: string
+                    example: "9.9.0"
+                  server_status:
+                    type: string
+                    example: "UP"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: SonarQube server unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /connections/{connectionId}/projects:
+    parameters:
+      - name: connectionId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    get:
+      tags: [projects]
+      summary: List projects for connection
+      description: Retrieve all projects from local database for this connection
+      parameters:
+        - name: include_metrics
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include latest metrics snapshot for each project
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '404':
+          description: Connection not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /connections/{connectionId}/projects/sync:
+    parameters:
+      - name: connectionId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    post:
+      tags: [projects]
+      summary: Sync projects from SonarQube
+      description: Fetch project list from SonarQube API and sync with local database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: SonarQube authentication token
+      responses:
+        '200':
+          description: Projects synced successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced_count:
+                    type: integer
+                    example: 15
+                  new_count:
+                    type: integer
+                    example: 3
+                  updated_count:
+                    type: integer
+                    example: 12
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Connection not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    get:
+      tags: [projects]
+      summary: Get project details
+      parameters:
+        - name: include_metrics
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include latest metrics snapshot
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetailed'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}/metrics:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    get:
+      tags: [metrics]
+      summary: Get metrics snapshots for project
+      description: Retrieve historical metrics for a project and branch
+      parameters:
+        - name: branch
+          in: query
+          schema:
+            type: string
+            default: "main"
+          description: Branch name
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 100
+          description: Number of snapshots to return
+      responses:
+        '200':
+          description: List of metrics snapshots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project_id:
+                    type: integer
+                  branch_name:
+                    type: string
+                  snapshots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MetricsSnapshot'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}/metrics/refresh:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    post:
+      tags: [metrics]
+      summary: Refresh metrics from SonarQube
+      description: Fetch latest metrics from SonarQube API and store as new snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: SonarQube authentication token
+                branch:
+                  type: string
+                  default: "main"
+                  description: Branch name to fetch metrics for
+      responses:
+        '201':
+          description: Metrics refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsSnapshot'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}/branches:
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        schema:
+          type: integer
+    
+    get:
+      tags: [projects]
+      summary: Get project branches
+      description: List all branches that have metrics stored locally
+      responses:
+        '200':
+          description: List of branches with metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    branch_name:
+                      type: string
+                    latest_analysis_date:
+                      type: string
+                      format: date-time
+                    snapshot_count:
+                      type: integer
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /dashboard:
+    get:
+      tags: [dashboard]
+      summary: Get multi-project dashboard data
+      description: Aggregate metrics across multiple projects for dashboard view
+      parameters:
+        - name: connection_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by connection ID (optional)
+        - name: project_ids
+          in: query
+          schema:
+            type: string
+          description: Comma-separated project IDs to include (optional, default: all)
+        - name: branch
+          in: query
+          schema:
+            type: string
+            default: "main"
+          description: Branch name to compare across projects
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        project_id:
+                          type: integer
+                        project_name:
+                          type: string
+                        latest_metrics:
+                          $ref: '#/components/schemas/MetricsSnapshot'
+                        staleness_hours:
+                          type: number
+                          description: Hours since last metrics fetch
+                  aggregates:
+                    type: object
+                    description: Aggregate statistics across all projects
+                    properties:
+                      total_projects:
+                        type: integer
+                      avg_coverage:
+                        type: number
+                      total_bugs:
+                        type: integer
+                      total_vulnerabilities:
+                        type: integer
+                      quality_gate_pass_rate:
+                        type: number
+                        description: Percentage of projects passing quality gate
+
+  /preferences:
+    get:
+      tags: [preferences]
+      summary: Get all user preferences
+      responses:
+        '200':
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+    
+    put:
+      tags: [preferences]
+      summary: Update user preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+components:
+  schemas:
+    Connection:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Production SonarQube"
+        server_url:
+          type: string
+          format: uri
+          example: "https://sonarqube.company.com"
+        server_version:
+          type: string
+          nullable: true
+          example: "9.9.0"
+        is_active:
+          type: boolean
+          example: true
+        last_validated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        connection_id:
+          type: integer
+          example: 1
+        project_key:
+          type: string
+          example: "com.company:my-app"
+        name:
+          type: string
+          example: "My Application"
+        description:
+          type: string
+          nullable: true
+          example: "Main application backend"
+        last_analysis_date:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProjectDetailed:
+      allOf:
+        - $ref: '#/components/schemas/Project'
+        - type: object
+          properties:
+            latest_metrics:
+              $ref: '#/components/schemas/MetricsSnapshot'
+              nullable: true
+            branches:
+              type: array
+              items:
+                type: string
+              example: ["main", "develop", "release-1.0"]
+
+    MetricsSnapshot:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        project_id:
+          type: integer
+          example: 1
+        branch_name:
+          type: string
+          example: "main"
+        analysis_date:
+          type: string
+          format: date-time
+          description: When SonarQube performed the analysis
+        fetch_timestamp:
+          type: string
+          format: date-time
+          description: When we fetched this data
+        bugs_count:
+          type: integer
+          example: 5
+        vulnerabilities_count:
+          type: integer
+          example: 2
+        code_smells_count:
+          type: integer
+          example: 45
+        coverage_pct:
+          type: number
+          format: float
+          nullable: true
+          example: 78.5
+        duplications_pct:
+          type: number
+          format: float
+          nullable: true
+          example: 3.2
+        quality_gate_status:
+          type: string
+          enum: [OK, WARN, ERROR]
+          example: "OK"
+        quality_gate_details:
+          type: object
+          nullable: true
+          description: Details of failing conditions (if any)
+        severity_breakdown:
+          type: object
+          nullable: true
+          properties:
+            blocker:
+              type: integer
+            critical:
+              type: integer
+            major:
+              type: integer
+            minor:
+              type: integer
+            info:
+              type: integer
+          example:
+            blocker: 0
+            critical: 2
+            major: 20
+            minor: 25
+            info: 5
+        ncloc:
+          type: integer
+          nullable: true
+          description: Non-commenting lines of code
+          example: 15420
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid server URL format"
+        details:
+          type: object
+          nullable: true
+          description: Additional error details (optional)
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: SonarQube token passed in Authorization header (for endpoints that interact with SonarQube)
+
+security: []  # Most endpoints don't require auth; SonarQube token passed in request bodies where needed
