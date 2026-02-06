@@ -101,6 +101,19 @@ function hideLoading() {
 }
 
 /**
+ * Show error message in a container
+ * @param {string} message - Error message to display
+ * @param {HTMLElement} container - Container element to show error in
+ */
+function showError(message, container) {
+  if (!container) {
+    return;
+  }
+  container.textContent = message;
+  container.classList.remove('hidden');
+}
+
+/**
  * Show toast notification
  * @param {string} message - Message to display
  * @param {string} type - Type of notification (success, error, warning, info)

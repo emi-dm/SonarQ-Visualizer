@@ -2,7 +2,7 @@
 
 import pytest
 from hypothesis import given, strategies as st
-from backend.src.services.connection_service import validate_connection_url
+from backend.src.models.connection import Connection
 
 
 # URL generation strategies
@@ -49,20 +49,19 @@ class TestConnectionValidationProperties:
     @given(valid_urls())
     def test_valid_urls_always_pass_validation(self, url):
         """Property: All valid HTTP/HTTPS URLs should pass validation."""
-        result = validate_connection_url(url)
-        assert result is True or isinstance(result, dict)  # May return warning for HTTP
+        connection = Connection(name="Test", server_url=url)
+        assert connection.server_url == url.rstrip('/')
     
     @given(invalid_urls())
     def test_invalid_urls_always_fail_validation(self, url):
         """Property: Invalid URLs should always fail validation."""
         with pytest.raises((ValueError, TypeError)):
-            validate_connection_url(url)
+            Connection(name="Test", server_url=url)
     
     @given(st.text(min_size=1, max_size=255))
     def test_connection_name_length_constraints(self, name):
         """Property: Connection names between 1-255 chars should be valid."""
         # Names should be trimmed and validated
-        from backend.src.models.connection import Connection
         if name.strip():
             connection = Connection(
                 name=name.strip(),

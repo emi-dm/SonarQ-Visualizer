@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "SonarQube Report Visualizer"
     app_version: str = "0.1.0"
-    debug: bool = False
+    debug: bool = True  # Development mode by default
     
     # Server
     host: str = "0.0.0.0"
@@ -90,6 +90,8 @@ def get_cors_origins() -> list[str]:
         return [
             "http://localhost:8000",
             "http://127.0.0.1:8000",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
             "http://localhost:3000",
             "http://127.0.0.1:3000"
         ]

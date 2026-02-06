@@ -29,9 +29,10 @@ def client(test_db):
     original_path = settings.database_path
     settings.database_path = test_db
     
-    client = TestClient(app)
+    from starlette.testclient import TestClient as StarletteTestClient
+    test_client = StarletteTestClient(app)
     
-    yield client
+    yield test_client
     
     settings.database_path = original_path
 
