@@ -23,14 +23,14 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project directory structure: backend/src/{models,services,api,db,utils}, backend/tests/{unit,integration,property}, frontend/{css,js,assets}, docs/, data/
-- [ ] T002 Initialize Python project with requirements.txt including: fastapi, uvicorn, sqlalchemy, requests, pytest, pytest-cov, hypothesis, black, flake8, mypy
-- [ ] T003 [P] Configure Python tooling in pyproject.toml: black (line-length=100), mypy (strict=true), pytest settings
-- [ ] T004 [P] Setup .gitignore for Python, SQLite, editor files, and `__pycache__`
-- [ ] T005 [P] Create README.md with project overview and quickstart (≤5 steps from quickstart.md)
-- [ ] T006 [P] Initialize CHANGELOG.md with version 0.1.0 entry (Keep a Changelog format)
-- [ ] T007 [P] Setup frontend package.json for ESLint and development tooling
-- [ ] T008 [P] Configure ESLint in .eslintrc.json for vanilla JavaScript (ES6+)
+- [x] T001 Create project directory structure: backend/src/{models,services,api,db,utils}, backend/tests/{unit,integration,property}, frontend/{css,js,assets}, docs/, data/
+- [x] T002 Initialize Python project with requirements.txt including: fastapi, uvicorn, sqlalchemy, requests, pytest, pytest-cov, hypothesis, black, flake8, mypy
+- [x] T003 [P] Configure Python tooling in pyproject.toml: black (line-length=100), mypy (strict=true), pytest settings
+- [x] T004 [P] Setup .gitignore for Python, SQLite, editor files, and `__pycache__`
+- [x] T005 [P] Create README.md with project overview and quickstart (≤5 steps from quickstart.md)
+- [x] T006 [P] Initialize CHANGELOG.md with version 0.1.0 entry (Keep a Changelog format)
+- [x] T007 [P] Setup frontend package.json for ESLint and development tooling
+- [x] T008 [P] Configure ESLint in .eslintrc.json for vanilla JavaScript (ES6+)
 
 ---
 
@@ -40,18 +40,18 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T009 Create database schema in backend/src/db/schema.sql with tables: connections, projects, metrics_snapshots, user_preferences (per data-model.md)
-- [ ] T010 Implement database initialization in backend/src/db/init.py with SQLite connection, WAL mode, foreign keys enforcement
-- [ ] T011 [P] Create SQLAlchemy base configuration in backend/src/db/base.py with declarative base and session factory
-- [ ] T012 [P] Implement structured logging utility in backend/src/utils/logger.py with JSON format for errors/API calls
-- [ ] T013 [P] Create configuration management in backend/src/utils/config.py for environment variables and database path
-- [ ] T014 [P] Implement error handling utilities in backend/src/utils/errors.py with custom exception classes
-- [ ] T015 Create FastAPI application in backend/src/main.py with CORS middleware, CSP headers, and router registration
-- [ ] T016 Implement health check endpoint in backend/src/api/health.py with GET /api/v1/health returning status and version
-- [ ] T017 Create application entrypoint in backend/app.py with init-db CLI command for database initialization
-- [ ] T018 [P] Setup frontend HTML structure in frontend/index.html with responsive meta tags and main layout sections
-- [ ] T019 [P] Create base CSS styles in frontend/css/styles.css with CSS variables, mobile-first responsive design, flexbox/grid layouts
-- [ ] T020 [P] Implement utility functions in frontend/js/utils.js for date formatting, DOM helpers, localStorage operations
+- [x] T009 Create database schema in backend/src/db/schema.sql with tables: connections, projects, metrics_snapshots, user_preferences (per data-model.md)
+- [x] T010 Implement database initialization in backend/src/db/init.py with SQLite connection, WAL mode, foreign keys enforcement
+- [x] T011 [P] Create SQLAlchemy base configuration in backend/src/db/base.py with declarative base and session factory
+- [x] T012 [P] Implement structured logging utility in backend/src/utils/logger.py with JSON format for errors/API calls
+- [x] T013 [P] Create configuration management in backend/src/utils/config.py for environment variables and database path
+- [x] T014 [P] Implement error handling utilities in backend/src/utils/errors.py with custom exception classes
+- [x] T015 Create FastAPI application in backend/src/main.py with CORS middleware, CSP headers, and router registration
+- [x] T016 Implement health check endpoint in backend/src/api/health.py with GET /api/v1/health returning status and version
+- [x] T017 Create application entrypoint in backend/app.py with init-db CLI command for database initialization
+- [x] T018 [P] Setup frontend HTML structure in frontend/index.html with responsive meta tags and main layout sections
+- [x] T019 [P] Create base CSS styles in frontend/css/styles.css with CSS variables, mobile-first responsive design, flexbox/grid layouts
+- [x] T020 [P] Implement utility functions in frontend/js/utils.js for date formatting, DOM helpers, localStorage operations
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -67,26 +67,26 @@ Web app structure: `backend/src/`, `backend/tests/`, `frontend/`
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T021 [P] [US1] Unit test for Connection model in backend/tests/unit/models/test_connection.py with validation rules
-- [ ] T022 [P] [US1] Property-based test for connection validation edge cases in backend/tests/property/test_connection_validation.py using Hypothesis (URL formats, timeout scenarios)
-- [ ] T023 [P] [US1] Integration test for connection create endpoint in backend/tests/integration/test_connections_api.py with mock SonarQube responses
-- [ ] T024 [P] [US1] Integration test for connection validation flow in backend/tests/integration/test_connection_validation.py with success/failure scenarios
+- [x] T021 [P] [US1] Unit test for Connection model in backend/tests/unit/models/test_connection.py with validation rules
+- [x] T022 [P] [US1] Property-based test for connection validation edge cases in backend/tests/property/test_connection_validation.py using Hypothesis (URL formats, timeout scenarios)
+- [x] T023 [P] [US1] Integration test for connection create endpoint in backend/tests/integration/test_connections_api.py with mock SonarQube responses
+- [x] T024 [P] [US1] Integration test for connection validation flow in backend/tests/integration/test_connection_validation.py with success/failure scenarios
 
 ### Implementation for User Story 1
 
-- [ ] T025 [P] [US1] Create Connection SQLAlchemy model in backend/src/models/connection.py with fields: id, name, server_url, server_version, is_active, last_validated_at, timestamps
-- [ ] T026 [P] [US1] Create connection repository in backend/src/db/repositories/connection_repository.py with CRUD operations
-- [ ] T027 [US1] Implement SonarQube API client in backend/src/services/sonarqube_client.py with token authentication, /api/system/status endpoint, 30s timeout, retry logic with exponential backoff
-- [ ] T028 [US1] Implement connection service in backend/src/services/connection_service.py with create, validate, list, update, delete operations
-- [ ] T029 [US1] Create connections API router in backend/src/api/connections.py with POST /connections, GET /connections, GET /connections/{id}, PUT /connections/{id}, DELETE /connections/{id}
-- [ ] T030 [US1] Implement connection validation endpoint in backend/src/api/connections.py POST /connections/{id}/validate with token validation and server info retrieval
-- [ ] T031 [US1] Add input validation and error handling for connections API with clear error messages per FR-009
-- [ ] T032 [US1] Implement structured logging for connection operations in backend/src/services/connection_service.py
-- [ ] T033 [US1] Create frontend connection form in frontend/index.html with fields: name, server_url, token inputs and Test/Save buttons
-- [ ] T034 [US1] Implement frontend API client in frontend/js/api-client.js with fetch wrapper, authorization header injection, error handling
-- [ ] T035 [US1] Implement connection management UI logic in frontend/js/app.js with form submission, validation feedback, localStorage token storage
-- [ ] T036 [US1] Add connection list display in frontend with status indicators and edit/delete actions
-- [ ] T037 [US1] Style connection UI components in frontend/css/styles.css with responsive layout and visual feedback
+- [x] T025 [P] [US1] Create Connection SQLAlchemy model in backend/src/models/connection.py with fields: id, name, server_url, server_version, is_active, last_validated_at, timestamps
+- [x] T026 [P] [US1] Create connection repository in backend/src/db/repositories/connection_repository.py with CRUD operations
+- [x] T027 [US1] Implement SonarQube API client in backend/src/services/sonarqube_client.py with token authentication, /api/system/status endpoint, 30s timeout, retry logic with exponential backoff
+- [x] T028 [US1] Implement connection service in backend/src/services/connection_service.py with create, validate, list, update, delete operations
+- [x] T029 [US1] Create connections API router in backend/src/api/connections.py with POST /connections, GET /connections, GET /connections/{id}, PUT /connections/{id}, DELETE /connections/{id}
+- [x] T030 [US1] Implement connection validation endpoint in backend/src/api/connections.py POST /connections/{id}/validate with token validation and server info retrieval
+- [x] T031 [US1] Add input validation and error handling for connections API with clear error messages per FR-009
+- [x] T032 [US1] Implement structured logging for connection operations in backend/src/services/connection_service.py
+- [x] T033 [US1] Create frontend connection form in frontend/index.html with fields: name, server_url, token inputs and Test/Save buttons
+- [x] T034 [US1] Implement frontend API client in frontend/js/api-client.js with fetch wrapper, authorization header injection, error handling
+- [x] T035 [US1] Implement connection management UI logic in frontend/js/app.js with form submission, validation feedback, localStorage token storage
+- [x] T036 [US1] Add connection list display in frontend with status indicators and edit/delete actions
+- [x] T037 [US1] Style connection UI components in frontend/css/styles.css with responsive layout and visual feedback
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can create, validate, list, and delete SonarQube connections
 

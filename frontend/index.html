@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="description" content="SonarQube Report Visualizer - Quality metrics visualization for SonarQube projects">
+    <title>SonarQube Report Visualizer</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">SonarQ Visualizer</h1>
+            <nav class="nav">
+                <button id="add-connection-btn" class="btn btn-primary">Add Connection</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Connections Section -->
+            <section id="connections-section" class="section">
+                <h2>Connections</h2>
+                <div id="connections-list" class="connections-grid">
+                    <!-- Connection cards will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects-section" class="section hidden">
+                <div class="section-header">
+                    <h2>Projects</h2>
+                    <button id="sync-projects-btn" class="btn btn-secondary">Sync Projects</button>
+                </div>
+                <div class="search-controls">
+                    <input type="text" id="project-search" placeholder="Search projects..." class="input">
+                </div>
+                <div id="projects-list" class="projects-grid">
+                    <!-- Project cards will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Project Detail Section -->
+            <section id="project-detail-section" class="section hidden">
+                <button id="back-to-projects-btn" class="btn btn-text">&larr; Back to Projects</button>
+                <div class="section-header">
+                    <h2 id="project-detail-title">Project Details</h2>
+                    <button id="refresh-metrics-btn" class="btn btn-secondary">Refresh Metrics</button>
+                </div>
+                <div id="project-metrics" class="metrics-container">
+                    <!-- Metrics will be inserted here -->
+                </div>
+                <div id="project-charts" class="charts-container">
+                    <!-- Charts will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="section hidden">
+                <h2>Dashboard</h2>
+                <div id="dashboard-aggregates" class="dashboard-aggregates">
+                    <!-- Aggregate stats will be inserted here -->
+                </div>
+                <div id="dashboard-charts" class="charts-container">
+                    <!-- Dashboard charts will be inserted here -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal for Add/Edit Connection -->
+    <div id="connection-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Connection</h3>
+                <button id="close-modal-btn" class="btn btn-close">&times;</button>
+            </div>
+            <form id="connection-form">
+                <div class="form-group">
+                    <label for="connection-name">Name</label>
+                    <input type="text" id="connection-name" name="name" required 
+                           placeholder="My SonarQube" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="connection-url">Server URL</label>
+                    <input type="url" id="connection-url" name="server_url" required 
+                           placeholder="https://sonarqube.company.com" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="connection-token">Token</label>
+                    <input type="password" id="connection-token" name="token" required 
+                           placeholder="squ_..." class="input">
+                    <small>Token is stored locally in your browser</small>
+                </div>
+                <div id="form-error" class="error-message hidden"></div>
+                <div class="form-actions">
+                    <button type="button" id="test-connection-btn" class="btn btn-secondary">Test Connection</button>
+                    <button type="submit" class="btn btn-primary">Save Connection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <script src="/static/js/charts.js" defer></script>
+</body>
+</html>
