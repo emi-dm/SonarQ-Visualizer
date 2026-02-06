@@ -251,6 +251,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded - too many requests to SonarQube API
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "RATE_LIMIT_EXCEEDED"
+                message: "SonarQube API rate limit exceeded. Retry after 60 seconds."
+                details:
+                  retry_after_seconds: 60
         '503':
           description: SonarQube server unreachable
           content:
@@ -269,7 +280,7 @@ paths:
     get:
       tags: [projects]
       summary: List projects for connection
-      description: Retrieve all projects from local database for this connection
+      description: Retrieve all projects from local database for this connection with pagination support
       parameters:
         - name: include_metrics
           in: query
@@ -277,15 +288,44 @@ paths:
             type: boolean
             default: false
           description: Include latest metrics snapshot for each project
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number (1-indexed)
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of projects per page
       responses:
         '200':
-          description: List of projects
+          description: List of projects with pagination metadata
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Project'
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      page_size:
+                        type: integer
+                      total_count:
+                        type: integer
+                      total_pages:
+                        type: integer
         '404':
           description: Connection not found
           content:
@@ -333,6 +373,16 @@ paths:
                   updated_count:
                     type: integer
                     example: 12
+                  failed_count:
+                    type: integer
+                    example: 0
+                    description: Number of projects that failed to sync
+                  failed_projects:
+                    type: array
+                    items:
+                      type: string
+                    example: []
+                    description: List of project keys that failed
         '401':
           description: Authentication failed
           content:
@@ -345,6 +395,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded - too many requests to SonarQube API
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Partial sync failure - more than 50% of projects failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "PARTIAL_SYNC_FAILURE"
+                message: "Sync rolled back: 8 of 10 projects failed to fetch"
+                details:
+                  total_projects: 10
+                  failed_count: 8
+                  threshold_exceeded: true
 
   /projects/{projectId}:
     parameters:
@@ -463,13 +532,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/MetricsSnapshot'
         '401':
-          description: Authentication failed
+          description: Authentication failed - token invalid or expired
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error: "TOKEN_EXPIRED"
+                message: "SonarQube authentication token has expired. Please re-authenticate."
+                details:
+                  token_cleared: true
         '404':
           description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid or malformed response from SonarQube API
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "INVALID_API_RESPONSE"
+                message: "SonarQube API returned malformed data. Operation failed."
+        '429':
+          description: Rate limit exceeded - too many requests to SonarQube API
           content:
             application/json:
               schema:

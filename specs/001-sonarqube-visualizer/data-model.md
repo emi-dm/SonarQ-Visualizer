@@ -304,6 +304,50 @@ When schema changes required:
 2. Write migration scripts: `migrations/001_add_column_x.sql`
 3. Consider adding Alembic if migrations become complex
 
+## Database Concurrency & Conflict Resolution
+
+### SQLite Concurrency Model
+
+- **Single Writer**: SQLite allows only one write transaction at a time
+- **Multiple Readers**: Multiple simultaneous read transactions allowed
+- **WAL Mode**: Enabled for better concurrency (readers don't block writers during commit)
+
+### Write Conflict Resolution Strategy
+
+**Automatic Retry with Exponential Backoff**:
+
+1. **First Attempt**: Execute write operation
+2. **On SQLITE_BUSY or SQLITE_LOCKED**:
+   - Retry 1: Wait 100ms, retry write
+   - Retry 2: Wait 200ms, retry write
+   - Retry 3: Wait 400ms, retry write
+3. **After 3 Failed Retries**: Return error to API layer with 409 Conflict status
+4. **User Action**: Frontend displays retry prompt, user can retry the operation
+
+**SQLAlchemy Configuration**:
+
+```python
+# Connection string with timeout
+engine = create_engine(
+    'sqlite:///data/sonarq-visualizer.db',
+    connect_args={
+        'timeout': 30,  # 30 second timeout for lock acquisition
+        'check_same_thread': False  # Allow multi-threaded access
+    }
+)
+
+# Enable WAL mode for better concurrency
+with engine.connect() as conn:
+    conn.execute(text("PRAGMA journal_mode=WAL"))
+    conn.execute(text("PRAGMA busy_timeout=30000"))  # 30s busy timeout
+```
+
+**Transaction Boundaries**:
+
+- **Single Entity Operations**: Auto-commit per operation (default SQLAlchemy behavior)
+- **Multi-Project Sync**: Explicit transaction with rollback on >50% failure (FR-024)
+- **Batch Metrics Insert**: One transaction per project snapshot (fail independently)
+
 ## Query Patterns
 
 ### Common Queries

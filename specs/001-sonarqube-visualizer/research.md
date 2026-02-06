@@ -118,6 +118,40 @@ This document captures research findings and technical decisions for building a 
 3. **Staleness Display**: Time differences always positive, formatted consistently
 4. **Metrics Math**: Aggregations (sum, average, trend) mathematically correct for any input list
 
+**PBT Test Configuration & Acceptance Thresholds**:
+
+- **Example Count**: 100 examples per test during PR CI, 500 examples on main branch merge
+- **Seed Strategy**: Deterministic seeding for reproducibility (use fixed seed in CI)
+- **Failure Criteria**: Zero failures allowed for merge; shrinking must produce minimal failing case
+- **Timeout**: 30 seconds maximum per property test
+- **Acceptance**: All 4 key properties must pass with 100% success rate
+
+**Test Data Generation Ranges** (for Hypothesis strategies):
+
+- **Dates**: 2020-01-01 to 2030-12-31 (covering SonarQube 8.x release to future)
+- **Timestamps**: Unix epoch 1577836800 (2020-01-01) to 1924905600 (2031-01-01)
+- **Metrics Counts**: -10 to 1,000,000 (including invalid negatives to test validation)
+- **Percentages**: -5.0 to 105.0 (including out-of-range to test boundary validation)
+- **Project Sizes**: 0 to 10,000 projects per connection
+- **Branch Names**: Valid strings (1-255 chars, alphanumeric + hyphens/slashes)
+- **Quality Gate Status**: ['OK', 'WARN', 'ERROR', 'INVALID'] (including invalid to test validation)
+
+**Mock Boundaries for Isolated Testing**:
+
+- **Unit Tests**: Mock at service boundaries
+  - Mock SonarQube API client → test business logic in isolation
+  - Mock database repositories → test service layer without DB
+  - Mock datetime.now() → test staleness calculations with fixed time
+  
+- **Integration Tests**: Mock only external dependencies
+  - Mock SonarQube HTTP responses (requests-mock library) → test API client + services + database
+  - Use real SQLite in-memory database (:memory:) → test full data flow
+  - Do NOT mock internal services → test component integration
+  
+- **Property-Based Tests**: Mock at same level as unit tests
+  - Generate varied inputs, mock external I/O
+  - Focus on testing invariants across input space
+
 **Alternatives Considered**:
 
 - **No PBT**: Rely solely on example-based tests. Rejected as it violates constitution Principle I (NON-NEGOTIABLE).

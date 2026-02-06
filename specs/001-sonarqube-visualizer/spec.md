@@ -101,6 +101,23 @@ A user wants to view project metrics through attractive charts, graphs, and visu
 - **FR-017**: System MUST provide a multi-project dashboard view that displays comparative metrics across all stored projects
 - **FR-018**: System MUST allow users to navigate from multi-project dashboard to detailed single-project views
 - **FR-019**: System MUST display staleness indicators showing when cached data was last updated (e.g., "last updated 2 days ago")
+- **FR-020**: System MUST handle SonarQube API rate limiting errors (HTTP 429) by implementing exponential backoff retry strategy with delays: 1s, 2s, 4s, 8s (maximum 4 retries)
+- **FR-021**: Backend MUST validate all user inputs against expected schemas and constraints to prevent SQL injection, XSS, and invalid data entry
+- **FR-022**: Backend MUST handle database write conflicts in SQLite single-writer mode by retrying failed writes up to 3 times with 100ms delays before returning error to user
+- **FR-023**: System MUST re-validate SonarQube connections that fail after initial success by marking connection as inactive and requiring user confirmation before retry
+- **FR-024**: System MUST handle partial project sync failures by rolling back the entire sync transaction if more than 50% of projects fail to fetch, otherwise complete partial sync and report failed projects to user
+- **FR-025**: Backend HTTP client MUST enforce connection validation timeout of 30 seconds at the requests library level using timeout parameter
+- **FR-026**: System MUST implement Content Security Policy (CSP) headers to prevent XSS attacks: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'
+- **FR-027**: System MUST calculate staleness indicator as: (current_timestamp - fetch_timestamp) formatted as human-readable duration (e.g., "2 hours ago", "3 days ago") with staleness warning threshold at 24 hours
+- **FR-028**: System MUST handle invalid or malformed SonarQube API responses by logging the error, returning graceful error message to user, and marking the operation as failed without crashing
+- **FR-029**: Backend metrics aggregation service MUST calculate dashboard statistics as: total_bugs = SUM(bugs_count), avg_coverage = AVG(coverage_pct), quality_gate_pass_rate = COUNT(status='OK')/COUNT(*) * 100
+- **FR-030**: System MUST support pagination for project lists with default page_size=20, maximum page_size=100, returning total_count in response metadata
+- **FR-031**: System MUST detect authentication token expiration errors (HTTP 401 from SonarQube) and clear stored token from localStorage, prompting user to re-authenticate
+- **FR-032**: System MUST validate metrics boundary conditions: bugs_count >= 0, coverage_pct between 0.00-100.00 (nullable), quality_gate_status in ['OK', 'WARN', 'ERROR'], rejecting invalid data
+- **FR-033**: System MUST optimize performance for large project lists (>100 projects) by implementing virtual scrolling in frontend and database query limit of 1000 projects per connection
+- **FR-034**: Backend MUST format structured logs in JSON with required fields: timestamp (ISO 8601), level (DEBUG/INFO/WARN/ERROR), message, context (user_action, endpoint, duration_ms, error_details if applicable)
+- **FR-035**: Backend SonarQube API client service MUST implement: token-based authentication header injection, automatic retry with exponential backoff for transient errors (500, 502, 503, 504), response parsing with schema validation, timeout of 30s per request
+- **FR-036**: System MUST initialize database on first run using backend/src/db/schema.sql if database file does not exist, with migration version tracking for future schema updates
 
 ### Key Entities _(include if feature involves data)_
 
@@ -114,7 +131,7 @@ A user wants to view project metrics through attractive charts, graphs, and visu
 ### Measurable Outcomes
 
 - **SC-001**: Users can successfully connect to a SonarQube instance and view available projects in under 30 seconds
-- **SC-002**: Metrics for a project are fetched and displayed within 5 seconds for projects with up to 1 million lines of code
+- **SC-002**: Metrics for a project are fetched and displayed within 5 seconds for projects with up to 1 million lines of code (metrics scope: bugs, vulnerabilities, code smells, coverage, duplications, quality gate; precision: counts as integers, percentages to 2 decimal places)
 - **SC-003**: Visualizations render within 2 seconds after metrics data is loaded
 - **SC-004**: 95% of connection errors provide actionable error messages that guide user to resolution
 - **SC-005**: Tool successfully retrieves data from both SonarQube Community (8.x+) and Enterprise editions (9.x+)
