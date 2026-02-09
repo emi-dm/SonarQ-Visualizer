@@ -60,6 +60,7 @@ addopts = [
     "--cov=backend/src",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--cov-report=xml",
     "--cov-branch"
 ]
 markers = [
