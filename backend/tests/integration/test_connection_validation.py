@@ -10,6 +10,9 @@ import tempfile
 import os
 
 
+TEST_SONAR_TOKEN = os.getenv("TEST_SONAR_TOKEN", "test-sonar-token")
+
+
 @pytest.fixture
 def test_db():
     """Create a temporary test database."""
@@ -46,7 +49,7 @@ class TestConnectionValidation:
         payload = {
             "name": "Test Connection",
             "server_url": "https://sonarqube.test.com",
-            "token": "squ_validtoken123",
+            "token": TEST_SONAR_TOKEN,
             "validate": False
         }
         create_response = client.post("/api/v1/connections", json=payload)
@@ -65,7 +68,7 @@ class TestConnectionValidation:
             )
             
             # Validate connection
-            validate_payload = {"token": "squ_validtoken123"}
+            validate_payload = {"token": TEST_SONAR_TOKEN}
             response = client.post(
                 f"/api/v1/connections/{connection_id}/validate",
                 json=validate_payload
@@ -83,7 +86,7 @@ class TestConnectionValidation:
         payload = {
             "name": "Test Connection",
             "server_url": "https://sonarqube.test.com",
-            "token": "squ_test",
+            "token": TEST_SONAR_TOKEN,
             "validate": False
         }
         create_response = client.post("/api/v1/connections", json=payload)
@@ -97,7 +100,7 @@ class TestConnectionValidation:
                 status_code=401
             )
             
-            validate_payload = {"token": "squ_invalidtoken"}
+            validate_payload = {"token": TEST_SONAR_TOKEN}
             response = client.post(
                 f"/api/v1/connections/{connection_id}/validate",
                 json=validate_payload
@@ -113,7 +116,7 @@ class TestConnectionValidation:
         payload = {
             "name": "Test Connection",
             "server_url": "https://sonarqube.test.com",
-            "token": "squ_test",
+            "token": TEST_SONAR_TOKEN,
             "validate": False
         }
         create_response = client.post("/api/v1/connections", json=payload)
@@ -126,7 +129,7 @@ class TestConnectionValidation:
                 exc=requests.exceptions.ConnectTimeout
             )
             
-            validate_payload = {"token": "squ_test"}
+            validate_payload = {"token": TEST_SONAR_TOKEN}
             response = client.post(
                 f"/api/v1/connections/{connection_id}/validate",
                 json=validate_payload
@@ -142,7 +145,7 @@ class TestConnectionValidation:
         payload = {
             "name": "Test Connection",
             "server_url": "https://sonarqube.test.com",
-            "token": "squ_test",
+            "token": TEST_SONAR_TOKEN,
             "validate": False
         }
         create_response = client.post("/api/v1/connections", json=payload)
@@ -155,7 +158,7 @@ class TestConnectionValidation:
                 exc=requests.exceptions.ReadTimeout
             )
             
-            validate_payload = {"token": "squ_test"}
+            validate_payload = {"token": TEST_SONAR_TOKEN}
             response = client.post(
                 f"/api/v1/connections/{connection_id}/validate",
                 json=validate_payload
@@ -181,7 +184,7 @@ class TestConnectionValidation:
             payload = {
                 "name": "Test Connection",
                 "server_url": "https://sonarqube.test.com",
-                "token": "squ_validtoken",
+                "token": TEST_SONAR_TOKEN,
                 "validate": True  # Request validation during creation
             }
             
@@ -198,7 +201,7 @@ class TestConnectionValidation:
         payload = {
             "name": "Test Connection",
             "server_url": "https://sonarqube.test.com",
-            "token": "squ_test",
+            "token": TEST_SONAR_TOKEN,
             "validate": False
         }
         create_response = client.post("/api/v1/connections", json=payload)
@@ -216,7 +219,7 @@ class TestConnectionValidation:
                 status_code=200
             )
             
-            validate_payload = {"token": "squ_test"}
+            validate_payload = {"token": TEST_SONAR_TOKEN}
             client.post(
                 f"/api/v1/connections/{connection_id}/validate",
                 json=validate_payload

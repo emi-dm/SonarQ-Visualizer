@@ -15,12 +15,11 @@ from backend.src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix=DASHBOARD_PATH, tags=["dashboard"])
-DBSession = Annotated[Session, Depends(get_db)]
 
 
 @router.get("")
 async def get_dashboard(
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     connection_id: Optional[int] = Query(None, description="Filter by connection ID"),
     project_ids: Optional[str] = Query(
         None,
@@ -75,7 +74,7 @@ async def get_dashboard(
 
 @router.get("/comparison")
 async def get_project_comparison(
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     project_ids: str = Query(..., description="Comma-separated project IDs to compare"),
     branch: str = Query("main", description="Branch name to compare")
 ):
@@ -127,7 +126,7 @@ async def get_project_comparison(
 @router.get("/trends/{project_id}")
 async def get_project_trends(
     project_id: int,
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     branch: str = Query("main", description="Branch name"),
     limit: int = Query(30, ge=1, le=100, description="Number of historical snapshots")
 ):

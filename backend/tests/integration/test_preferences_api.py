@@ -158,7 +158,7 @@ class TestPreferencesAPI:
         """Test PUT /preferences validates request body."""
         response = client.put(
             "/api/v1/preferences",
-            data="invalid json",
+            content="invalid json",
             headers={"Content-Type": "application/json"}
         )
         

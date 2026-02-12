@@ -14,7 +14,7 @@ function formatDate(date) {
   
   const d = typeof date === 'string' ? new Date(date) : date;
   
-  if (isNaN(d.getTime())) {
+  if (Number.isNaN(d.getTime())) {
     return 'Invalid date';
   }
   

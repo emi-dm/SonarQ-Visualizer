@@ -27,7 +27,6 @@ import time
 
 logger = get_logger(__name__)
 router = APIRouter(prefix=PROJECTS_PATH, tags=["metrics"])
-DBSession = Annotated[Session, Depends(get_db)]
 
 
 class MetricsSnapshotResponse(BaseModel):
@@ -75,7 +74,7 @@ def build_error_response(status_code: int, error: str, message: str, details: Op
 @router.get("/{project_id}/metrics", response_model=MetricsListResponse)
 async def get_metrics(
     project_id: int,
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     branch: Optional[str] = Query(default=None, description="Branch name filter. If not provided, fetches main branch."),
     limit: int = Query(default=30, ge=1, le=100)
 ):
@@ -104,7 +103,7 @@ async def get_metrics(
 async def refresh_metrics(
     project_id: int,
     payload: MetricsRefreshRequest,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     start_time = time.time()
 
@@ -147,7 +146,7 @@ async def refresh_metrics(
 @router.get("/{project_id}/metrics/export")
 async def export_latest_metrics(
     project_id: int,
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     format: str = Query(default="json", description="Export format: json or csv"),
     branch: Optional[str] = Query(default=None, description="Branch name filter. Defaults to main.")
 ):

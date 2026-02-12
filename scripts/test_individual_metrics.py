@@ -2,10 +2,14 @@
 """Test each metric to find which ones cause 404."""
 
 import requests
+import os
 
-token = '86d94f6df17bbf7f79ec048dbe378f3f84ddc235'
+token = os.getenv("SONAR_API_TOKEN", "")
 url = "https://sonarcloud.io/api/measures/component"
 project = "emi-dm_SpecKit-Example"
+
+if not token:
+    raise SystemExit("Missing SONAR_API_TOKEN environment variable")
 
 all_metrics = [
     "bugs",
@@ -49,16 +53,16 @@ for metric in all_metrics:
         failing_metrics.append(metric)
         print(f"❌ {metric:30} (404)")
 
-print(f"\n\n📊 Resumen:")
+print("\n\n📊 Resumen:")
 print(f"   Métricas disponibles: {len(working_metrics)}/{len(all_metrics)}")
-print(f"   Lista de métricas que funcionan:")
+print("   Lista de métricas que funcionan:")
 print(f"   {', '.join(working_metrics)}")
 
 if failing_metrics:
-    print(f"\n   ⚠️  Métricas que causan 404:")
+    print("\n   ⚠️  Métricas que causan 404:")
     print(f"   {', '.join(failing_metrics)}")
 
-print(f"\n\n🔧 Probando con TODAS las métricas disponibles juntas...")
+print("\n\n🔧 Probando con TODAS las métricas disponibles juntas...")
 working_keys = ",".join(working_metrics)
 response = requests.get(
     url,

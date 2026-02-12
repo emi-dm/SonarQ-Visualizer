@@ -3,8 +3,12 @@
 
 import requests
 import json
+import os
 
-token = '86d94f6df17bbf7f79ec048dbe378f3f84ddc235'
+token = os.getenv("SONAR_API_TOKEN", "")
+
+if not token:
+    raise SystemExit("Missing SONAR_API_TOKEN environment variable")
 
 # Exact same call as the test script that worked
 url = "https://sonarcloud.io/api/measures/component"

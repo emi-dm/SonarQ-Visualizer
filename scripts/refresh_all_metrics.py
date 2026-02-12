@@ -3,8 +3,9 @@
 
 import requests
 import sys
+import os
 
-TOKEN = '86d94f6df17bbf7f79ec048dbe378f3f84ddc235'
+TOKEN = os.getenv("SONAR_API_TOKEN", "")
 BASE_URL = 'http://127.0.0.1:8000/api/v1'
 
 def refresh_project_metrics(project_id, project_name, branch=None):
@@ -23,7 +24,7 @@ def refresh_project_metrics(project_id, project_name, branch=None):
         
         if response.status_code in [200, 201]:
             data = response.json()
-            print(f"   ✅ Metrics refreshed successfully!")
+            print("   ✅ Metrics refreshed successfully!")
             print(f"      - Bugs: {data.get('bugs_count')}")
             print(f"      - Vulnerabilities: {data.get('vulnerabilities_count')}")
             print(f"      - Code Smells: {data.get('code_smells_count')}")
@@ -45,6 +46,10 @@ projects = [
 ]
 
 print("🚀 Refreshing metrics for all projects with analyses...")
+
+if not TOKEN:
+    print("❌ Missing SONAR_API_TOKEN environment variable")
+    sys.exit(1)
 
 success_count = 0
 for project in projects:

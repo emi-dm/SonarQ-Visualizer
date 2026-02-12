@@ -8,7 +8,7 @@ import json
 def test_sonarcloud_access(token: str, organization: str):
     """Verifica acceso a SonarCloud y lista proyectos."""
     
-    print(f"\n🔍 Verificando acceso a SonarCloud...")
+    print("\n🔍 Verificando acceso a SonarCloud...")
     print(f"   Organización: {organization}\n")
     
     headers = {"Authorization": f"Bearer {token}"}
@@ -79,7 +79,7 @@ def test_sonarcloud_access(token: str, organization: str):
                 for measure in measures[:3]:  # Mostrar primeras 3
                     print(f"          - {measure.get('metric')}: {measure.get('value', 'N/A')}")
             else:
-                print(f"       ⚠️  Sin métricas (proyecto no analizado)")
+                print("       ⚠️  Sin métricas (proyecto no analizado)")
         else:
             print(f"       ⚠️  No se pueden obtener métricas - Status: {metrics_response.status_code}")
         
@@ -96,7 +96,7 @@ def test_sonarcloud_access(token: str, organization: str):
                 default_branch = next((b for b in branches if b.get("isMain")), branches[0])
                 print(f"       📋 Branch por defecto: {default_branch.get('name')}")
             else:
-                print(f"       ⚠️  Sin branches configurados")
+                print("       ⚠️  Sin branches configurados")
         
         print()
 

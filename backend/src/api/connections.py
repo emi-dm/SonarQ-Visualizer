@@ -22,7 +22,6 @@ import time
 
 logger = get_logger(__name__)
 router = APIRouter(prefix=CONNECTIONS_PATH, tags=["connections"])
-DBSession = Annotated[Session, Depends(get_db)]
 
 
 # Pydantic models for request/response
@@ -110,7 +109,7 @@ def build_error_response(
 @router.post("", response_model=ConnectionResponse, status_code=status.HTTP_201_CREATED)
 async def create_connection(
     connection: ConnectionCreate,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     """Create a new SonarQube connection.
     
@@ -176,7 +175,7 @@ async def create_connection(
 
 
 @router.get("", response_model=List[ConnectionResponse])
-async def list_connections(db: DBSession):
+async def list_connections(db: Annotated[Session, Depends(get_db)]):
     """List all connections.
     
     Args:
@@ -199,7 +198,7 @@ async def list_connections(db: DBSession):
 @router.get("/{connection_id}", response_model=ConnectionResponse)
 async def get_connection(
     connection_id: int,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     """Get connection by ID.
     
@@ -239,7 +238,7 @@ async def get_connection(
 async def update_connection(
     connection_id: int,
     connection: ConnectionUpdate,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     """Update connection details.
     
@@ -294,7 +293,7 @@ async def update_connection(
 @router.delete("/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_connection(
     connection_id: int,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     """Delete a connection.
     
@@ -329,7 +328,7 @@ async def delete_connection(
 async def validate_connection(
     connection_id: int,
     payload: ConnectionValidate,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     """Validate a connection with SonarQube server.
     

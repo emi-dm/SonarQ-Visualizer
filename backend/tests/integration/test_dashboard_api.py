@@ -5,7 +5,7 @@ Tests GET /dashboard with multiple projects and aggregation verification.
 
 import pytest
 from fastapi.testclient import TestClient
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from backend.src.main import app
 from backend.src.db.base import get_db
 from backend.src.models.connection import Connection
@@ -14,6 +14,11 @@ from backend.src.models.metrics_snapshot import MetricsSnapshot
 
 
 client = TestClient(app)
+
+
+def utc_now() -> datetime:
+    """Return naive UTC datetime for DB/model compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 @pytest.fixture
@@ -33,7 +38,7 @@ def test_db(tmp_path):
         server_url="https://sonarqube.test.com",
         server_version="9.9.0",
         is_active=True,
-        last_validated_at=datetime.utcnow()
+        last_validated_at=utc_now()
     )
     db.add(connection)
     db.commit()
@@ -53,7 +58,7 @@ def test_db(tmp_path):
             project_key=proj_data["project_key"],
             name=proj_data["name"],
             description=proj_data["description"],
-            last_analysis_date=datetime.utcnow() - timedelta(hours=2)
+            last_analysis_date=utc_now() - timedelta(hours=2)
         )
         db.add(project)
         projects.append(project)
@@ -94,8 +99,8 @@ def test_db(tmp_path):
         snapshot = MetricsSnapshot(
             project_id=metric_data["project_id"],
             branch_name="main",
-            analysis_date=datetime.utcnow() - timedelta(hours=2),
-            fetch_timestamp=datetime.utcnow() - timedelta(hours=1),
+            analysis_date=utc_now() - timedelta(hours=2),
+            fetch_timestamp=utc_now() - timedelta(hours=1),
             bugs_count=metric_data["bugs_count"],
             vulnerabilities_count=metric_data["vulnerabilities_count"],
             code_smells_count=20,
@@ -207,7 +212,7 @@ class TestDashboardAPI:
         assert data["aggregates"]["total_bugs"] == 0
         assert data["aggregates"]["total_vulnerabilities"] == 0
         assert data["aggregates"]["avg_coverage"] is None  # No coverage data
-        assert data["aggregates"]["quality_gate_pass_rate"] == 0.0
+        assert data["aggregates"]["quality_gate_pass_rate"] == pytest.approx(0.0)
 
     def test_get_dashboard_projects_without_metrics(self, test_db):
         """Test dashboard handles projects with no metrics snapshots."""
@@ -243,7 +248,7 @@ class TestDashboardAPI:
             connection_id=connection.id,
             project_key="project_null_cov",
             name="Project Null Coverage",
-            last_analysis_date=datetime.utcnow()
+            last_analysis_date=utc_now()
         )
         db.add(project)
         db.commit()
@@ -252,8 +257,8 @@ class TestDashboardAPI:
         snapshot = MetricsSnapshot(
             project_id=project.id,
             branch_name="main",
-            analysis_date=datetime.utcnow(),
-            fetch_timestamp=datetime.utcnow(),
+            analysis_date=utc_now(),
+            fetch_timestamp=utc_now(),
             bugs_count=10,
             vulnerabilities_count=5,
             code_smells_count=15,

@@ -30,14 +30,14 @@ for i, proj in enumerate(projects, 1):
     # Verificar severity breakdown
     severity = metrics.get('severity_breakdown', {})
     if severity:
-        print(f'      Severity Breakdown:')
+        print('      Severity Breakdown:')
         for key, val in severity.items():
             print(f'        • {key}: {val}')
     print()
 
 # Verificar agregados
 agg = data.get('aggregates', {})
-print(f'\n📈 AGREGADOS (FR-029):\n')
+print('\n📈 AGREGADOS (FR-029):\n')
 print(f'  ├─ Total Projects: {agg.get("total_projects")}')
 print(f'  ├─ Total Bugs: {agg.get("total_bugs")}')
 print(f'  ├─ Total Vulnerabilities: {agg.get("total_vulnerabilities")}')
@@ -46,7 +46,7 @@ print(f'  ├─ Avg Coverage: {agg.get("avg_coverage") or "N/A"}')
 print(f'  ├─ Avg Duplications: {agg.get("avg_duplications")}%')
 print(f'  └─ Quality Gate Pass Rate: {agg.get("quality_gate_pass_rate")}%')
 
-print(f'\n' + '='*60)
+print('\n' + '='*60)
 
 # Verificaciones de integridad
 issues = []

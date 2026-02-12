@@ -19,7 +19,6 @@ from backend.src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix=PREFERENCES_PATH, tags=["preferences"])
-DBSession = Annotated[Session, Depends(get_db)]
 
 
 class PreferencesUpdate(BaseModel):
@@ -30,7 +29,7 @@ class PreferencesUpdate(BaseModel):
 
 
 @router.get("", responses={500: {"description": "Failed to retrieve preferences"}})
-async def get_preferences(db: DBSession):
+async def get_preferences(db: Annotated[Session, Depends(get_db)]):
     """Get all user preferences.
     
     Returns all user-set preferences merged with default values.
@@ -60,7 +59,7 @@ async def get_preferences(db: DBSession):
 @router.put("", responses={400: {"description": "Invalid preference value"}, 500: {"description": "Failed to update preferences"}})
 async def update_preferences(
     preferences: Dict[str, Any],
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     """Update user preferences.
     
@@ -100,7 +99,7 @@ async def update_preferences(
 
 @router.get("/{key}", responses={404: {"description": "Preference not found"}, 500: {"description": "Failed to retrieve preference"}})
 async def get_preference(
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     key: str = Path(..., description="Preference key")
 ):
     """Get a single preference value.
@@ -111,7 +110,7 @@ async def get_preference(
     Returns:
         Preference value or default
     """
-    logger.info(f"GET /preferences/{key}")
+    logger.info("GET /preferences/{key}")
     
     preferences_service = PreferencesService(db)
     
@@ -139,7 +138,7 @@ async def get_preference(
 
 @router.delete("/{key}", responses={500: {"description": "Failed to delete preference"}})
 async def delete_preference(
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     key: str = Path(..., description="Preference key to delete")
 ):
     """Delete a specific preference.
@@ -152,7 +151,7 @@ async def delete_preference(
     Returns:
         Success message with default value
     """
-    logger.info(f"DELETE /preferences/{key}")
+    logger.info("DELETE /preferences/{key}")
     
     preferences_service = PreferencesService(db)
     
@@ -176,7 +175,7 @@ async def delete_preference(
 
 
 @router.post("/reset", responses={500: {"description": "Failed to reset preferences"}})
-async def reset_all_preferences(db: DBSession):
+async def reset_all_preferences(db: Annotated[Session, Depends(get_db)]):
     """Reset all preferences to default values.
     
     Deletes all user-set preferences and returns defaults.
@@ -207,7 +206,7 @@ async def reset_all_preferences(db: DBSession):
 
 
 @router.get("/keys/predefined", responses={500: {"description": "Failed to retrieve predefined keys"}})
-async def get_predefined_keys(db: DBSession):
+async def get_predefined_keys(db: Annotated[Session, Depends(get_db)]):
     """Get list of predefined preference keys.
     
     Returns all recognized preference keys with their default values.

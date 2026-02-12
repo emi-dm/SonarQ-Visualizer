@@ -1,8 +1,13 @@
 """Unit tests for MetricsSnapshot model."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from backend.src.models.metrics_snapshot import MetricsSnapshot
+
+
+def utc_now() -> datetime:
+    """Return naive UTC datetime for DB/model compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class TestMetricsSnapshotModel:
@@ -10,7 +15,7 @@ class TestMetricsSnapshotModel:
 
     def test_metrics_snapshot_creation_valid(self):
         """Test creating a metrics snapshot with valid data."""
-        analysis_date = datetime.utcnow() - timedelta(hours=1)
+        analysis_date = utc_now() - timedelta(hours=1)
         snapshot = MetricsSnapshot(
             project_id=1,
             branch_name="main",
@@ -32,7 +37,7 @@ class TestMetricsSnapshotModel:
 
     def test_negative_counts_invalid(self):
         """Test that negative counts are rejected."""
-        analysis_date = datetime.utcnow() - timedelta(hours=1)
+        analysis_date = utc_now() - timedelta(hours=1)
         with pytest.raises(ValueError):
             MetricsSnapshot(
                 project_id=1,
@@ -46,7 +51,7 @@ class TestMetricsSnapshotModel:
 
     def test_coverage_out_of_bounds_invalid(self):
         """Test that coverage percent out of bounds is rejected."""
-        analysis_date = datetime.utcnow() - timedelta(hours=1)
+        analysis_date = utc_now() - timedelta(hours=1)
         with pytest.raises(ValueError):
             MetricsSnapshot(
                 project_id=1,
@@ -61,7 +66,7 @@ class TestMetricsSnapshotModel:
 
     def test_quality_gate_status_invalid(self):
         """Test that invalid quality gate status is rejected."""
-        analysis_date = datetime.utcnow() - timedelta(hours=1)
+        analysis_date = utc_now() - timedelta(hours=1)
         with pytest.raises(ValueError):
             MetricsSnapshot(
                 project_id=1,
@@ -75,7 +80,7 @@ class TestMetricsSnapshotModel:
 
     def test_analysis_date_after_fetch_timestamp_invalid(self):
         """Test that analysis_date cannot be after fetch_timestamp."""
-        analysis_date = datetime.utcnow() + timedelta(hours=1)
+        analysis_date = utc_now() + timedelta(hours=1)
         with pytest.raises(ValueError):
             MetricsSnapshot(
                 project_id=1,

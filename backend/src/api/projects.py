@@ -27,7 +27,6 @@ import time
 logger = get_logger(__name__)
 router = APIRouter(prefix=CONNECTIONS_PATH, tags=["projects"])
 projects_router = APIRouter(prefix=PROJECTS_PATH, tags=["projects"])  # Direct project endpoints
-DBSession = Annotated[Session, Depends(get_db)]
 
 
 class ProjectResponse(BaseModel):
@@ -107,7 +106,7 @@ def build_error_response(status_code: int, error: str, message: str, details: Op
 @router.get("/{connection_id}/projects", response_model=ProjectListResponse)
 async def list_projects(
     connection_id: int,
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     include_metrics: bool = Query(default=False),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100)
@@ -150,7 +149,7 @@ async def list_projects(
 async def sync_projects(
     connection_id: int,
     payload: SyncRequest,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     start_time = time.time()
 
@@ -207,7 +206,7 @@ async def sync_projects(
 @projects_router.get("/{project_id}", response_model=ProjectDetailedResponse)
 async def get_project(
     project_id: int,
-    db: DBSession,
+    db: Annotated[Session, Depends(get_db)],
     include_metrics: bool = Query(default=False)
 ):
     start_time = time.time()
@@ -238,7 +237,7 @@ async def get_project(
 @projects_router.get("/{project_id}/branches", response_model=List[dict])
 async def list_branches(
     project_id: int,
-    db: DBSession
+    db: Annotated[Session, Depends(get_db)]
 ):
     start_time = time.time()
 
