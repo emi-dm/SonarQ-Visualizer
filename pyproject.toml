@@ -71,11 +71,15 @@ markers = [
 
 [tool.coverage.run]
 source = ["backend/src"]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/__init__.py",
     "*/migrations/*"
 ]
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.coverage.report]
 precision = 2

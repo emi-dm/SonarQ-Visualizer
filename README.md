@@ -93,6 +93,17 @@ pytest -m integration
 pytest --cov
 ```
 
+### SonarQube Cloud coverage
+
+This project is configured to import Python coverage from `coverage.xml` using:
+
+- `sonar.python.coverage.reportPaths=coverage.xml` (in `sonar-project.properties`)
+- CI workflow at `.github/workflows/sonarcloud.yml`
+
+Before scanning, ensure tests run with XML coverage output:
+
+`pytest --cov=backend/src --cov-report=xml --cov-branch backend/tests`
+
 ### Code Quality
 
 ```bash
