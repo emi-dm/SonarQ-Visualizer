@@ -3,7 +3,7 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
+from datetime import datetime, timezone
 
 from backend.src.models.connection import Connection
 from backend.src.utils.errors import ConflictError, NotFoundError, DatabaseError
@@ -183,7 +183,7 @@ class ConnectionRepository:
             Connection: Updated connection
         """
         connection = self.get_by_id(connection_id)
-        connection.last_validated_at = datetime.utcnow()
+        connection.last_validated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         if server_version:
             connection.server_version = server_version
         

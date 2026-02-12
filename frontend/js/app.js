@@ -238,7 +238,7 @@ async function saveConnection() {
   try {
     if (editId) {
       // Update existing connection
-      const connection = await connectionsAPI.update(parseInt(editId), {
+      const connection = await connectionsAPI.update(Number.parseInt(editId, 10), {
         name: name,
         server_url: serverUrl,
         organization: organization || null
@@ -779,7 +779,7 @@ function getErrorMessage(error, fallback) {
   if (error.error) {
     return error.error;
   }
-  if (error.details && error.details.message) {
+  if (error.details?.message) {
     return error.details.message;
   }
   return fallback;
@@ -899,7 +899,7 @@ async function loadDashboard() {
     const connectionFilter = document.getElementById('dashboard-connection-filter');
     const params = {};
     
-    if (connectionFilter && connectionFilter.value) {
+    if (connectionFilter?.value) {
       params.connection_id = connectionFilter.value;
     }
     
@@ -933,12 +933,12 @@ function renderDashboardAggregates(aggregates) {
   document.getElementById('stat-total-bugs').textContent = aggregates.total_bugs || '0';
   document.getElementById('stat-total-vulnerabilities').textContent = aggregates.total_vulnerabilities || '0';
   
-  const avgCoverage = aggregates.avg_coverage !== null && aggregates.avg_coverage !== undefined
+  const avgCoverage = aggregates.avg_coverage != null
     ? `${aggregates.avg_coverage.toFixed(1)}%`
     : 'N/A';
   document.getElementById('stat-avg-coverage').textContent = avgCoverage;
   
-  const qgPassRate = aggregates.quality_gate_pass_rate !== null && aggregates.quality_gate_pass_rate !== undefined
+  const qgPassRate = aggregates.quality_gate_pass_rate != null
     ? `${aggregates.quality_gate_pass_rate.toFixed(1)}%`
     : 'N/A';
   document.getElementById('stat-qg-pass-rate').textContent = qgPassRate;
@@ -1040,8 +1040,12 @@ function renderDashboardProjectCards(projects) {
         `;
       }
       
-      const qgClass = metrics.quality_gate_status === 'OK' ? 'badge-success' :
-                      metrics.quality_gate_status === 'WARN' ? 'badge-warning' : 'badge-error';
+      let qgClass = 'badge-error';
+      if (metrics.quality_gate_status === 'OK') {
+        qgClass = 'badge-success';
+      } else if (metrics.quality_gate_status === 'WARN') {
+        qgClass = 'badge-warning';
+      }
       
       const stalenessHours = project.staleness_hours || 0;
       const stalenessClass = stalenessHours > 24 ? 'text-warning' : 'text-secondary';
@@ -1087,7 +1091,7 @@ function renderDashboardProjectCards(projects) {
   // Add click listeners to project cards
   container.querySelectorAll('.project-card').forEach(card => {
     card.addEventListener('click', () => {
-      const projectId = parseInt(card.dataset.projectId);
+      const projectId = Number.parseInt(card.dataset.projectId, 10);
       const project = appState.projects.find(p => p.id === projectId);
       
       if (project) {

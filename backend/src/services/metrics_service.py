@@ -1,6 +1,6 @@
 """Metrics service for fetching and storing SonarQube metrics."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -14,6 +14,11 @@ from backend.src.utils.errors import InvalidAPIResponseError, NotFoundError
 from backend.src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def utc_now_naive() -> datetime:
+    """Return UTC timestamp as naive datetime for DB compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def aggregate_metrics(snapshots: List[dict]) -> dict:
@@ -67,7 +72,7 @@ class MetricsService:
             client.close()
 
         analysis_date = metrics_data.get("analysis_date")
-        fetch_timestamp = datetime.utcnow()
+        fetch_timestamp = utc_now_naive()
         if analysis_date and analysis_date > fetch_timestamp:
             raise InvalidAPIResponseError("Analysis date is in the future")
 

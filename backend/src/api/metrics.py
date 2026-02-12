@@ -1,7 +1,7 @@
 """Metrics API router for project metrics endpoints."""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Annotated
 import csv
 import io
 import json
@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from backend.src.constants import PROJECTS_PATH
 from backend.src.db.base import get_db
 from backend.src.services.metrics_service import MetricsService
 from backend.src.utils.errors import (
@@ -25,7 +26,8 @@ from backend.src.utils.logger import get_logger, log_api_call
 import time
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/projects", tags=["metrics"])
+router = APIRouter(prefix=PROJECTS_PATH, tags=["metrics"])
+DBSession = Annotated[Session, Depends(get_db)]
 
 
 class MetricsSnapshotResponse(BaseModel):
@@ -37,12 +39,12 @@ class MetricsSnapshotResponse(BaseModel):
     bugs_count: int
     vulnerabilities_count: int
     code_smells_count: int
-    coverage_pct: Optional[float]
-    duplications_pct: Optional[float]
+    coverage_pct: Optional[float] = None
+    duplications_pct: Optional[float] = None
     quality_gate_status: str
-    quality_gate_details: Optional[dict]
-    severity_breakdown: Optional[dict]
-    ncloc: Optional[int]
+    quality_gate_details: Optional[dict] = None
+    severity_breakdown: Optional[dict] = None
+    ncloc: Optional[int] = None
     created_at: datetime
 
     class Config:
@@ -73,9 +75,9 @@ def build_error_response(status_code: int, error: str, message: str, details: Op
 @router.get("/{project_id}/metrics", response_model=MetricsListResponse)
 async def get_metrics(
     project_id: int,
+    db: DBSession,
     branch: Optional[str] = Query(default=None, description="Branch name filter. If not provided, fetches main branch."),
-    limit: int = Query(default=30, ge=1, le=100),
-    db: Session = Depends(get_db)
+    limit: int = Query(default=30, ge=1, le=100)
 ):
     start_time = time.time()
 
@@ -102,7 +104,7 @@ async def get_metrics(
 async def refresh_metrics(
     project_id: int,
     payload: MetricsRefreshRequest,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     start_time = time.time()
 
@@ -145,9 +147,9 @@ async def refresh_metrics(
 @router.get("/{project_id}/metrics/export")
 async def export_latest_metrics(
     project_id: int,
+    db: DBSession,
     format: str = Query(default="json", description="Export format: json or csv"),
-    branch: Optional[str] = Query(default=None, description="Branch name filter. Defaults to main."),
-    db: Session = Depends(get_db)
+    branch: Optional[str] = Query(default=None, description="Branch name filter. Defaults to main.")
 ):
     start_time = time.time()
 

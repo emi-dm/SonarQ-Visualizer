@@ -3,7 +3,7 @@
 Represents quality metrics captured for a project branch.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Index
@@ -11,6 +11,11 @@ from sqlalchemy.orm import validates
 from sqlalchemy.types import JSON
 
 from backend.src.db.base import Base
+
+
+def utc_now() -> datetime:
+    """Return current UTC datetime as naive for DB compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class MetricsSnapshot(Base):
@@ -25,7 +30,7 @@ class MetricsSnapshot(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
     branch_name = Column(String(255), nullable=False, default="main")
     analysis_date = Column(DateTime, nullable=False)
-    fetch_timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    fetch_timestamp = Column(DateTime, nullable=False, default=utc_now)
 
     bugs_count = Column(Integer, nullable=False, default=0)
     vulnerabilities_count = Column(Integer, nullable=False, default=0)
@@ -36,11 +41,11 @@ class MetricsSnapshot(Base):
     quality_gate_details = Column(JSON, nullable=True)
     severity_breakdown = Column(JSON, nullable=True)
     ncloc = Column(Integer, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
 
     def __init__(self, **kwargs):
         if "fetch_timestamp" not in kwargs or kwargs["fetch_timestamp"] is None:
-            kwargs["fetch_timestamp"] = datetime.utcnow()
+            kwargs["fetch_timestamp"] = utc_now()
         super().__init__(**kwargs)
 
     @validates("branch_name")

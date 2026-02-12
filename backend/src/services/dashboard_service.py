@@ -4,7 +4,7 @@ Implements FR-029 dashboard aggregation formulas for metrics across multiple pro
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from backend.src.models.project import Project
@@ -115,7 +115,7 @@ class DashboardService:
         Returns:
             Hours since fetch (rounded to 2 decimal places)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         delta = now - fetch_timestamp
         hours = delta.total_seconds() / 3600
         

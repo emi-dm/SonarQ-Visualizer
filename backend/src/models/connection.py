@@ -5,10 +5,15 @@ Represents an authenticated connection to a SonarQube server.
 
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, UniqueConstraint, Index
 from sqlalchemy.orm import validates
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from backend.src.db.base import Base
+
+
+def utc_now() -> datetime:
+    """Return current UTC datetime as naive for DB compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Connection(Base):
@@ -27,8 +32,8 @@ class Connection(Base):
     server_version = Column(String(50), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     last_validated_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    updated_at = Column(DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     def __init__(self, **kwargs):
         """Initialize connection with sensible defaults."""

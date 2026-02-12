@@ -4,27 +4,29 @@ Endpoints:
 - GET /dashboard - Multi-project dashboard with aggregated metrics
 """
 
-from typing import Optional
+from typing import Optional, Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from backend.src.constants import DASHBOARD_PATH
 from backend.src.db.base import get_db
 from backend.src.services.dashboard_service import DashboardService
 from backend.src.utils.logger import get_logger
 
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix=DASHBOARD_PATH, tags=["dashboard"])
+DBSession = Annotated[Session, Depends(get_db)]
 
 
 @router.get("")
 async def get_dashboard(
+    db: DBSession,
     connection_id: Optional[int] = Query(None, description="Filter by connection ID"),
     project_ids: Optional[str] = Query(
         None,
         description="Comma-separated project IDs to include (optional, default: all)"
     ),
-    branch: Optional[str] = Query(None, description="Branch name to compare. If not specified, uses latest from any branch"),
-    db: Session = Depends(get_db)
+    branch: Optional[str] = Query(None, description="Branch name to compare. If not specified, uses latest from any branch")
 ):
     """Get multi-project dashboard data with aggregated metrics.
     
@@ -73,9 +75,9 @@ async def get_dashboard(
 
 @router.get("/comparison")
 async def get_project_comparison(
+    db: DBSession,
     project_ids: str = Query(..., description="Comma-separated project IDs to compare"),
-    branch: str = Query("main", description="Branch name to compare"),
-    db: Session = Depends(get_db)
+    branch: str = Query("main", description="Branch name to compare")
 ):
     """Get metrics comparison for specific projects.
     
@@ -125,9 +127,9 @@ async def get_project_comparison(
 @router.get("/trends/{project_id}")
 async def get_project_trends(
     project_id: int,
+    db: DBSession,
     branch: str = Query("main", description="Branch name"),
-    limit: int = Query(30, ge=1, le=100, description="Number of historical snapshots"),
-    db: Session = Depends(get_db)
+    limit: int = Query(30, ge=1, le=100, description="Number of historical snapshots")
 ):
     """Get historical metrics for trend analysis.
     

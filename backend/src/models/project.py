@@ -3,13 +3,18 @@
 Represents a SonarQube project tracked by the visualizer.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, Index
 from sqlalchemy.orm import validates
 
 from backend.src.db.base import Base
+
+
+def utc_now() -> datetime:
+    """Return current UTC datetime as naive for DB compatibility."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Project(Base):
@@ -27,8 +32,8 @@ class Project(Base):
     name = Column(String(512), nullable=False)
     description = Column(Text, nullable=True)
     last_analysis_date = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    updated_at = Column(DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     @validates("name")
     def validate_name(self, key: str, name: str) -> str:

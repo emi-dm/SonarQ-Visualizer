@@ -3,10 +3,11 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from typing import Optional, List, Annotated
 from datetime import datetime
 from sqlalchemy.orm import Session
 
+from backend.src.constants import CONNECTIONS_PATH
 from backend.src.db.base import get_db
 from backend.src.services.connection_service import ConnectionService
 from backend.src.utils.errors import (
@@ -20,7 +21,8 @@ from backend.src.utils.logger import get_logger, log_api_call
 import time
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/connections", tags=["connections"])
+router = APIRouter(prefix=CONNECTIONS_PATH, tags=["connections"])
+DBSession = Annotated[Session, Depends(get_db)]
 
 
 # Pydantic models for request/response
@@ -63,10 +65,10 @@ class ConnectionResponse(BaseModel):
     id: int
     name: str
     server_url: str
-    organization: Optional[str]
-    server_version: Optional[str]
+    organization: Optional[str] = None
+    server_version: Optional[str] = None
     is_active: bool
-    last_validated_at: Optional[datetime]
+    last_validated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     
@@ -77,8 +79,8 @@ class ConnectionResponse(BaseModel):
 class ValidationResponse(BaseModel):
     """Response model for validation result."""
     status: str
-    server_version: Optional[str]
-    server_status: Optional[str]
+    server_version: Optional[str] = None
+    server_status: Optional[str] = None
 
 
 class ErrorResponse(BaseModel):
@@ -108,7 +110,7 @@ def build_error_response(
 @router.post("", response_model=ConnectionResponse, status_code=status.HTTP_201_CREATED)
 async def create_connection(
     connection: ConnectionCreate,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     """Create a new SonarQube connection.
     
@@ -126,7 +128,7 @@ async def create_connection(
     
     try:
         service = ConnectionService(db)
-        created_connection, validation_result = service.create_connection(
+        created_connection, _ = service.create_connection(
             name=connection.name,
             server_url=connection.server_url,
             organization=connection.organization,
@@ -135,13 +137,13 @@ async def create_connection(
         )
         
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, "/connections", "POST", duration_ms, 201)
+        log_api_call(logger, CONNECTIONS_PATH, "POST", duration_ms, 201)
         
         return created_connection
         
     except ConflictError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, "/connections", "POST", duration_ms, 409, str(e))
+        log_api_call(logger, CONNECTIONS_PATH, "POST", duration_ms, 409, str(e))
         return build_error_response(
             status.HTTP_409_CONFLICT,
             "CONFLICT",
@@ -156,7 +158,7 @@ async def create_connection(
             error_code = "TOKEN_EXPIRED"
         if isinstance(e, ConnError):
             error_code = "VALIDATION_ERROR"
-        log_api_call(logger, "/connections", "POST", duration_ms, status_code, str(e))
+        log_api_call(logger, CONNECTIONS_PATH, "POST", duration_ms, status_code, str(e))
         return build_error_response(
             status_code,
             error_code,
@@ -165,7 +167,7 @@ async def create_connection(
         )
     except ValueError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, "/connections", "POST", duration_ms, 422, str(e))
+        log_api_call(logger, CONNECTIONS_PATH, "POST", duration_ms, 422, str(e))
         return build_error_response(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             "VALIDATION_ERROR",
@@ -174,7 +176,7 @@ async def create_connection(
 
 
 @router.get("", response_model=List[ConnectionResponse])
-async def list_connections(db: Session = Depends(get_db)):
+async def list_connections(db: DBSession):
     """List all connections.
     
     Args:
@@ -189,7 +191,7 @@ async def list_connections(db: Session = Depends(get_db)):
     connections = service.list_connections()
     
     duration_ms = (time.time() - start_time) * 1000
-    log_api_call(logger, "/connections", "GET", duration_ms, 200)
+    log_api_call(logger, CONNECTIONS_PATH, "GET", duration_ms, 200)
     
     return connections
 
@@ -197,7 +199,7 @@ async def list_connections(db: Session = Depends(get_db)):
 @router.get("/{connection_id}", response_model=ConnectionResponse)
 async def get_connection(
     connection_id: int,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     """Get connection by ID.
     
@@ -237,7 +239,7 @@ async def get_connection(
 async def update_connection(
     connection_id: int,
     connection: ConnectionUpdate,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     """Update connection details.
     
@@ -292,7 +294,7 @@ async def update_connection(
 @router.delete("/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_connection(
     connection_id: int,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     """Delete a connection.
     
@@ -327,7 +329,7 @@ async def delete_connection(
 async def validate_connection(
     connection_id: int,
     payload: ConnectionValidate,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     """Validate a connection with SonarQube server.
     

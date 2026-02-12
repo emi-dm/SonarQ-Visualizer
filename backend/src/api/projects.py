@@ -1,13 +1,14 @@
 """Projects API router with list, sync, and detail endpoints."""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from backend.src.constants import CONNECTIONS_PATH, PROJECTS_PATH
 from backend.src.db.base import get_db
 from backend.src.services.project_service import ProjectService
 from backend.src.utils.errors import (
@@ -24,8 +25,9 @@ from backend.src.utils.logger import get_logger, log_api_call
 import time
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/connections", tags=["projects"])
-projects_router = APIRouter(prefix="/projects", tags=["projects"])  # Direct project endpoints
+router = APIRouter(prefix=CONNECTIONS_PATH, tags=["projects"])
+projects_router = APIRouter(prefix=PROJECTS_PATH, tags=["projects"])  # Direct project endpoints
+DBSession = Annotated[Session, Depends(get_db)]
 
 
 class ProjectResponse(BaseModel):
@@ -33,8 +35,8 @@ class ProjectResponse(BaseModel):
     connection_id: int
     project_key: str
     name: str
-    description: Optional[str]
-    last_analysis_date: Optional[datetime]
+    description: Optional[str] = None
+    last_analysis_date: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -51,12 +53,12 @@ class MetricsSnapshotResponse(BaseModel):
     bugs_count: int
     vulnerabilities_count: int
     code_smells_count: int
-    coverage_pct: Optional[float]
-    duplications_pct: Optional[float]
+    coverage_pct: Optional[float] = None
+    duplications_pct: Optional[float] = None
     quality_gate_status: str
-    quality_gate_details: Optional[dict]
-    severity_breakdown: Optional[dict]
-    ncloc: Optional[int]
+    quality_gate_details: Optional[dict] = None
+    severity_breakdown: Optional[dict] = None
+    ncloc: Optional[int] = None
     created_at: datetime
 
     class Config:
@@ -65,7 +67,7 @@ class MetricsSnapshotResponse(BaseModel):
 
 class ProjectDetailedResponse(ProjectResponse):
     latest_metrics: Optional[MetricsSnapshotResponse] = None
-    branches: List[str] = []
+    branches: List[str] = Field(default_factory=list)
 
 
 class PaginationResponse(BaseModel):
@@ -105,10 +107,10 @@ def build_error_response(status_code: int, error: str, message: str, details: Op
 @router.get("/{connection_id}/projects", response_model=ProjectListResponse)
 async def list_projects(
     connection_id: int,
+    db: DBSession,
     include_metrics: bool = Query(default=False),
     page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db)
+    page_size: int = Query(default=20, ge=1, le=100)
 ):
     start_time = time.time()
 
@@ -148,7 +150,7 @@ async def list_projects(
 async def sync_projects(
     connection_id: int,
     payload: SyncRequest,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     start_time = time.time()
 
@@ -205,8 +207,8 @@ async def sync_projects(
 @projects_router.get("/{project_id}", response_model=ProjectDetailedResponse)
 async def get_project(
     project_id: int,
-    include_metrics: bool = Query(default=False),
-    db: Session = Depends(get_db)
+    db: DBSession,
+    include_metrics: bool = Query(default=False)
 ):
     start_time = time.time()
 
@@ -236,7 +238,7 @@ async def get_project(
 @projects_router.get("/{project_id}/branches", response_model=List[dict])
 async def list_branches(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     start_time = time.time()
 

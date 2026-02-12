@@ -8,7 +8,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-from backend.src.utils.config import get_database_path
+from backend.src.utils.config import get_database_path, settings
 
 
 def _resolve_db_path(db_path: Optional[str] = None) -> Path:
@@ -61,6 +61,8 @@ def init_database(db_path: Optional[str] = None) -> None:
         sqlite3.Error: If database initialization fails
     """
     db_file = _resolve_db_path(db_path)
+    if db_path:
+        settings.database_path = str(db_file)
     
     # Read schema from file
     schema_path = Path(__file__).parent / "schema.sql"
@@ -85,6 +87,11 @@ def init_database(db_path: Optional[str] = None) -> None:
         raise sqlite3.Error(f"Failed to initialize database: {e}") from e
     finally:
         conn.close()
+
+
+def init_db(db_path: Optional[str] = None) -> None:
+    """Backward-compatible alias for database initialization."""
+    init_database(db_path=db_path)
 
 
 def check_database_exists() -> bool:

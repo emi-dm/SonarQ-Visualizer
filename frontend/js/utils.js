@@ -124,13 +124,21 @@ function showToast(message, type = 'info', duration = 3000) {
   if (!container) {
     return;
   }
+
+  const toastColorByType = {
+    error: '#DE350B',
+    success: '#00875A',
+    warning: '#FF8B00',
+    info: '#0747A6'
+  };
+  const backgroundColor = toastColorByType[type] || toastColorByType.info;
   
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
   toast.style.cssText = `
     padding: 1rem 1.5rem;
-    background-color: ${type === 'error' ? '#DE350B' : type === 'success' ? '#00875A' : type === 'warning' ? '#FF8B00' : '#0747A6'};
+    background-color: ${backgroundColor};
     color: white;
     border-radius: 6px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

@@ -13,6 +13,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from pathlib import Path
 
+from backend.src.constants import API_V1_PREFIX
 from backend.src.utils.config import settings, get_cors_origins, get_csp_header
 from backend.src.utils.logger import get_logger
 from backend.src.api.health import router as health_router
@@ -48,12 +49,15 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="REST API for SonarQube quality metrics visualization",
-    docs_url="/api/v1/docs",
-    redoc_url="/api/v1/redoc",
-    openapi_url="/api/v1/openapi.json"
+    docs_url=f"{API_V1_PREFIX}/docs",
+    redoc_url=f"{API_V1_PREFIX}/redoc",
+    openapi_url=f"{API_V1_PREFIX}/openapi.json"
 )
 
-# Add CORS middleware
+# Add CSP middleware
+app.add_middleware(CSPMiddleware)
+
+# Add CORS middleware last
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
@@ -62,17 +66,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add CSP middleware
-app.add_middleware(CSPMiddleware)
-
 # Register API routers
-app.include_router(health_router, prefix="/api/v1")
-app.include_router(connections_router, prefix="/api/v1")
-app.include_router(projects_router, prefix="/api/v1")  # /connections/{id}/projects
-app.include_router(direct_projects_router, prefix="/api/v1")  # /projects/{id}
-app.include_router(metrics_router, prefix="/api/v1")
-app.include_router(dashboard_router, prefix="/api/v1")
-app.include_router(preferences_router, prefix="/api/v1")
+app.include_router(health_router, prefix=API_V1_PREFIX)
+app.include_router(connections_router, prefix=API_V1_PREFIX)
+app.include_router(projects_router, prefix=API_V1_PREFIX)  # /connections/{id}/projects
+app.include_router(direct_projects_router, prefix=API_V1_PREFIX)  # /projects/{id}
+app.include_router(metrics_router, prefix=API_V1_PREFIX)
+app.include_router(dashboard_router, prefix=API_V1_PREFIX)
+app.include_router(preferences_router, prefix=API_V1_PREFIX)
 
 # Mount static files for frontend
 frontend_path = Path(__file__).parent.parent.parent.parent / "frontend"

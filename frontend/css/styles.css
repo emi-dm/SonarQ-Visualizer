@@ -46,21 +46,7 @@
   --font-size-xl: 1.5rem;
   --font-size-xxl: 2rem;
   
-  /* Border radius */
-  --radius-sm: 3px;
-  --radius-md: 6px;
-  --radius-lg: 12px;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15);
-  
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-}
-
+  /* Additional quality-gate badges */
 /* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -70,10 +56,6 @@
 
 /* Base styles */
 html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
 
 body {
   font-family: var(--font-family);

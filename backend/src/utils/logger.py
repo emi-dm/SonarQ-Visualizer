@@ -7,7 +7,7 @@ API calls, and other application events per FR-034 requirement.
 import json
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 
@@ -24,7 +24,7 @@ class JSONFormatter(logging.Formatter):
             str: JSON-formatted log entry
         """
         log_data: Dict[str, Any] = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "level": record.levelname,
             "message": record.getMessage(),
         }

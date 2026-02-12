@@ -7,29 +7,30 @@ Endpoints:
 - POST /preferences/reset - Reset all preferences to defaults
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from backend.src.db.base import get_db
+from backend.src.constants import PREFERENCES_PATH
 from backend.src.services.preferences_service import PreferencesService
 from backend.src.utils.logger import get_logger
 
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/preferences", tags=["preferences"])
+router = APIRouter(prefix=PREFERENCES_PATH, tags=["preferences"])
+DBSession = Annotated[Session, Depends(get_db)]
 
 
 class PreferencesUpdate(BaseModel):
     """Request model for updating preferences."""
-    pass  # Accept any JSON object (additionalProperties: true in OpenAPI)
-    
+
     class Config:
         extra = "allow"  # Allow additional fields
 
 
-@router.get("")
-async def get_preferences(db: Session = Depends(get_db)):
+@router.get("", responses={500: {"description": "Failed to retrieve preferences"}})
+async def get_preferences(db: DBSession):
     """Get all user preferences.
     
     Returns all user-set preferences merged with default values.
@@ -56,10 +57,10 @@ async def get_preferences(db: Session = Depends(get_db)):
         )
 
 
-@router.put("")
+@router.put("", responses={400: {"description": "Invalid preference value"}, 500: {"description": "Failed to update preferences"}})
 async def update_preferences(
     preferences: Dict[str, Any],
-    db: Session = Depends(get_db)
+    db: DBSession
 ):
     """Update user preferences.
     
@@ -79,7 +80,7 @@ async def update_preferences(
     try:
         updated_preferences = preferences_service.update_preferences(preferences)
         
-        logger.info(f"Successfully updated preferences")
+        logger.info("Successfully updated preferences")
         
         return updated_preferences
         
@@ -97,10 +98,10 @@ async def update_preferences(
         )
 
 
-@router.get("/{key}")
+@router.get("/{key}", responses={404: {"description": "Preference not found"}, 500: {"description": "Failed to retrieve preference"}})
 async def get_preference(
-    key: str = Path(..., description="Preference key"),
-    db: Session = Depends(get_db)
+    db: DBSession,
+    key: str = Path(..., description="Preference key")
 ):
     """Get a single preference value.
     
@@ -136,10 +137,10 @@ async def get_preference(
         )
 
 
-@router.delete("/{key}")
+@router.delete("/{key}", responses={500: {"description": "Failed to delete preference"}})
 async def delete_preference(
-    key: str = Path(..., description="Preference key to delete"),
-    db: Session = Depends(get_db)
+    db: DBSession,
+    key: str = Path(..., description="Preference key to delete")
 ):
     """Delete a specific preference.
     
@@ -174,8 +175,8 @@ async def delete_preference(
         )
 
 
-@router.post("/reset")
-async def reset_all_preferences(db: Session = Depends(get_db)):
+@router.post("/reset", responses={500: {"description": "Failed to reset preferences"}})
+async def reset_all_preferences(db: DBSession):
     """Reset all preferences to default values.
     
     Deletes all user-set preferences and returns defaults.
@@ -205,8 +206,8 @@ async def reset_all_preferences(db: Session = Depends(get_db)):
         )
 
 
-@router.get("/keys/predefined")
-async def get_predefined_keys(db: Session = Depends(get_db)):
+@router.get("/keys/predefined", responses={500: {"description": "Failed to retrieve predefined keys"}})
+async def get_predefined_keys(db: DBSession):
     """Get list of predefined preference keys.
     
     Returns all recognized preference keys with their default values.
