@@ -49,7 +49,7 @@ async def get_preferences(db: Annotated[Session, Depends(get_db)]):
         return preferences
         
     except Exception as e:
-        logger.error(f"Error retrieving preferences: {str(e)}", exc_info=True)
+        logger.error("Error retrieving preferences", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={"error": "Failed to retrieve preferences", "details": str(e)}
@@ -84,13 +84,13 @@ async def update_preferences(
         return updated_preferences
         
     except ValueError as e:
-        logger.warning(f"Validation error updating preferences: {str(e)}")
+        logger.warning("Validation error updating preferences")
         raise HTTPException(
             status_code=400,
             detail={"error": "Invalid preference value", "details": str(e)}
         )
     except Exception as e:
-        logger.error(f"Error updating preferences: {str(e)}", exc_info=True)
+        logger.error("Error updating preferences", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={"error": "Failed to update preferences", "details": str(e)}
@@ -118,7 +118,7 @@ async def get_preference(
         value = preferences_service.get_preference(key)
         
         if value is None:
-            logger.warning(f"Preference not found: {key}")
+            logger.warning("Preference not found")
             raise HTTPException(
                 status_code=404,
                 detail={"error": "Preference not found", "key": key}
@@ -129,7 +129,7 @@ async def get_preference(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error retrieving preference {key}: {str(e)}", exc_info=True)
+        logger.error("Error retrieving preference", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={"error": "Failed to retrieve preference", "details": str(e)}
@@ -158,7 +158,7 @@ async def delete_preference(
     try:
         default_value = preferences_service.reset_preference(key)
         
-        logger.info(f"Deleted preference: {key}")
+        logger.info("Preference deleted")
         
         return {
             "message": "Preference deleted",
@@ -167,7 +167,7 @@ async def delete_preference(
         }
         
     except Exception as e:
-        logger.error(f"Error deleting preference {key}: {str(e)}", exc_info=True)
+        logger.error("Error deleting preference", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={"error": "Failed to delete preference", "details": str(e)}
@@ -198,7 +198,7 @@ async def reset_all_preferences(db: Annotated[Session, Depends(get_db)]):
         }
         
     except Exception as e:
-        logger.error(f"Error resetting preferences: {str(e)}", exc_info=True)
+        logger.error("Error resetting preferences", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={"error": "Failed to reset preferences", "details": str(e)}
@@ -230,7 +230,7 @@ async def get_predefined_keys(db: Annotated[Session, Depends(get_db)]):
         }
         
     except Exception as e:
-        logger.error(f"Error retrieving predefined keys: {str(e)}", exc_info=True)
+        logger.error("Error retrieving predefined keys", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={"error": "Failed to retrieve predefined keys", "details": str(e)}

@@ -283,6 +283,128 @@ class TestDashboardAPI:
         # Should remain the same, null excluded
         assert abs(data["aggregates"]["avg_coverage"] - 64.25) < 0.5
 
+    def test_get_dashboard_invalid_project_ids_format(self, test_db):
+        """Test GET /dashboard returns error payload for invalid project_ids format."""
+        response = client.get("/api/v1/dashboard?project_ids=1,abc,3")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["error"] == "Invalid project_ids format. Must be comma-separated integers."
+
+    def test_get_dashboard_handles_service_exception(self, test_db, monkeypatch):
+        """Test GET /dashboard handles service exceptions gracefully."""
+        from backend.src.services.dashboard_service import DashboardService
+
+        def mock_get_dashboard_data(self, connection_id=None, project_ids=None, branch=None):
+            raise RuntimeError("simulated dashboard failure")
+
+        monkeypatch.setattr(DashboardService, "get_dashboard_data", mock_get_dashboard_data)
+
+        response = client.get("/api/v1/dashboard")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["error"] == "Failed to retrieve dashboard data"
+        assert "simulated dashboard failure" in data["details"]
+
+    def test_get_dashboard_comparison_success(self, test_db):
+        """Test GET /dashboard/comparison returns compared project list."""
+        db = next(get_db())
+        projects = db.query(Project).all()
+        project_ids = f"{projects[0].id},{projects[1].id}"
+        db.close()
+
+        response = client.get(f"/api/v1/dashboard/comparison?project_ids={project_ids}&branch=main")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "projects" in data
+        assert "count" in data
+        assert data["count"] == 2
+
+    def test_get_dashboard_comparison_invalid_project_ids_format(self, test_db):
+        """Test GET /dashboard/comparison invalid project_ids format."""
+        response = client.get("/api/v1/dashboard/comparison?project_ids=oops")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["error"] == "Invalid project_ids format. Must be comma-separated integers."
+
+    def test_get_dashboard_comparison_handles_service_exception(self, test_db, monkeypatch):
+        """Test GET /dashboard/comparison handles service exceptions gracefully."""
+        from backend.src.services.dashboard_service import DashboardService
+
+        def mock_get_project_comparison(self, project_ids, branch="main"):
+            raise RuntimeError("simulated comparison failure")
+
+        monkeypatch.setattr(DashboardService, "get_project_comparison", mock_get_project_comparison)
+
+        db = next(get_db())
+        project = db.query(Project).first()
+        db.close()
+
+        response = client.get(f"/api/v1/dashboard/comparison?project_ids={project.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["error"] == "Failed to retrieve comparison data"
+        assert "simulated comparison failure" in data["details"]
+
+    def test_get_dashboard_trends_success(self, test_db):
+        """Test GET /dashboard/trends/{project_id} returns trend snapshots."""
+        db = next(get_db())
+        project = db.query(Project).first()
+        project_id = project.id
+
+        # Add an older snapshot so trends endpoint returns multiple items
+        older_snapshot = MetricsSnapshot(
+            project_id=project_id,
+            branch_name="main",
+            analysis_date=utc_now() - timedelta(days=1),
+            fetch_timestamp=utc_now() - timedelta(days=1),
+            bugs_count=3,
+            vulnerabilities_count=1,
+            code_smells_count=10,
+            coverage_pct=80.0,
+            duplications_pct=2.1,
+            quality_gate_status="OK",
+            quality_gate_details={"conditions": []},
+            severity_breakdown={"CRITICAL": 1},
+            ncloc=9000,
+        )
+        db.add(older_snapshot)
+        db.commit()
+        db.close()
+
+        response = client.get(f"/api/v1/dashboard/trends/{project_id}?branch=main&limit=5")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+        assert data["branch"] == "main"
+        assert "snapshots" in data
+        assert data["count"] >= 1
+
+    def test_get_dashboard_trends_handles_service_exception(self, test_db, monkeypatch):
+        """Test GET /dashboard/trends/{project_id} handles service exceptions gracefully."""
+        from backend.src.services.dashboard_service import DashboardService
+
+        def mock_get_trends_data(self, project_id, branch="main", limit=30):
+            raise RuntimeError("simulated trends failure")
+
+        monkeypatch.setattr(DashboardService, "get_trends_data", mock_get_trends_data)
+
+        db = next(get_db())
+        project = db.query(Project).first()
+        db.close()
+
+        response = client.get(f"/api/v1/dashboard/trends/{project.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["error"] == "Failed to retrieve trends data"
+        assert "simulated trends failure" in data["details"]
+
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

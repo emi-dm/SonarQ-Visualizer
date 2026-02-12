@@ -32,10 +32,7 @@ async def get_dashboard(
     Returns:
         Dashboard data with projects list and aggregate statistics
     """
-    logger.info(
-        f"GET /dashboard - connection_id={connection_id}, "
-        f"project_ids={project_ids}, branch={branch}"
-    )
+    logger.info("GET /dashboard")
     
     # Parse project_ids if provided
     parsed_project_ids = None
@@ -43,7 +40,7 @@ async def get_dashboard(
         try:
             parsed_project_ids = [int(pid.strip()) for pid in project_ids.split(",")]
         except ValueError:
-            logger.error(f"Invalid project_ids format: {project_ids}")
+            logger.error("Invalid project_ids format")
             return {
                 "error": "Invalid project_ids format. Must be comma-separated integers."
             }
@@ -65,7 +62,7 @@ async def get_dashboard(
         return dashboard_data
         
     except Exception as e:
-        logger.error(f"Error fetching dashboard data: {str(e)}", exc_info=True)
+        logger.error("Error fetching dashboard data", exc_info=True)
         return {
             "error": "Failed to retrieve dashboard data",
             "details": str(e)
@@ -83,13 +80,13 @@ async def get_project_comparison(
     Returns:
         List of project metrics for side-by-side comparison
     """
-    logger.info(f"GET /dashboard/comparison - project_ids={project_ids}, branch={branch}")
+    logger.info("GET /dashboard/comparison")
     
     # Parse project_ids
     try:
         parsed_project_ids = [int(pid.strip()) for pid in project_ids.split(",")]
     except ValueError:
-        logger.error(f"Invalid project_ids format: {project_ids}")
+        logger.error("Invalid project_ids format")
         return {
             "error": "Invalid project_ids format. Must be comma-separated integers."
         }
@@ -116,7 +113,7 @@ async def get_project_comparison(
         }
         
     except Exception as e:
-        logger.error(f"Error fetching comparison data: {str(e)}", exc_info=True)
+        logger.error("Error fetching comparison data", exc_info=True)
         return {
             "error": "Failed to retrieve comparison data",
             "details": str(e)
@@ -135,9 +132,7 @@ async def get_project_trends(
     Returns:
         List of metrics snapshots ordered by analysis date
     """
-    logger.info(
-        f"GET /dashboard/trends/{project_id} - branch={branch}, limit={limit}"
-    )
+    logger.info("GET /dashboard/trends/{project_id}")
     
     dashboard_service = DashboardService(db)
     
@@ -158,7 +153,7 @@ async def get_project_trends(
         }
         
     except Exception as e:
-        logger.error(f"Error fetching trends data: {str(e)}", exc_info=True)
+        logger.error("Error fetching trends data", exc_info=True)
         return {
             "error": "Failed to retrieve trends data",
             "details": str(e)

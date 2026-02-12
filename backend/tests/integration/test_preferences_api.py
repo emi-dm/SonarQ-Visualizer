@@ -227,6 +227,111 @@ class TestPreferencesAPI:
         for key, value in predefined_preferences.items():
             assert data[key] == value
 
+    def test_get_preference_existing_key(self, test_db):
+        """Test GET /preferences/{key} returns a saved preference value."""
+        client.put("/api/v1/preferences", json={"theme": "dark"})
+
+        response = client.get("/api/v1/preferences/theme")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["key"] == "theme"
+        assert data["value"] == "dark"
+
+    def test_get_preference_not_found(self, test_db):
+        """Test GET /preferences/{key} returns 404 for unknown non-predefined key."""
+        response = client.get("/api/v1/preferences/nonexistent_custom_key")
+
+        assert response.status_code == 404
+        data = response.json()
+        assert data["detail"]["error"] == "Preference not found"
+        assert data["detail"]["key"] == "nonexistent_custom_key"
+
+    def test_delete_preference_resets_to_default(self, test_db):
+        """Test DELETE /preferences/{key} deletes stored value and returns default."""
+        client.put("/api/v1/preferences", json={"theme": "dark"})
+
+        response = client.delete("/api/v1/preferences/theme")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "Preference deleted"
+        assert data["key"] == "theme"
+        assert data["default_value"] == "light"
+
+        get_response = client.get("/api/v1/preferences/theme")
+        assert get_response.status_code == 200
+        assert get_response.json()["value"] == "light"
+
+    def test_reset_all_preferences(self, test_db):
+        """Test POST /preferences/reset clears custom values and restores defaults."""
+        client.put("/api/v1/preferences", json={"theme": "dark", "custom_key": "custom"})
+
+        response = client.post("/api/v1/preferences/reset")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "All preferences reset to defaults"
+        assert "preferences" in data
+        assert data["preferences"]["theme"] == "light"
+
+        get_response = client.get("/api/v1/preferences")
+        get_data = get_response.json()
+        assert get_data["theme"] == "light"
+        assert "custom_key" not in get_data
+
+    def test_get_predefined_keys_endpoint(self, test_db):
+        """Test GET /preferences/keys/predefined returns key metadata."""
+        response = client.get("/api/v1/preferences/keys/predefined")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "predefined_keys" in data
+        assert "count" in data
+        assert "defaults" in data
+        assert data["count"] == len(data["predefined_keys"])
+        assert "theme" in data["predefined_keys"]
+
+    def test_put_preferences_validation_error(self, test_db):
+        """Test PUT /preferences returns 400 on invalid predefined value."""
+        response = client.put("/api/v1/preferences", json={"theme": "neon"})
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["detail"]["error"] == "Invalid preference value"
+
+    def test_get_preferences_handles_service_exception(self, test_db, monkeypatch):
+        """Test GET /preferences returns 500 when service raises unexpected error."""
+        from backend.src.services.preferences_service import PreferencesService
+
+        def mock_get_all_preferences(self):
+            raise RuntimeError("simulated preferences failure")
+
+        monkeypatch.setattr(PreferencesService, "get_all_preferences", mock_get_all_preferences)
+
+        response = client.get("/api/v1/preferences")
+
+        assert response.status_code == 500
+        data = response.json()
+        assert data["detail"]["error"] == "Failed to retrieve preferences"
+        assert "simulated preferences failure" in data["detail"]["details"]
+
+    def test_delete_preference_handles_service_exception(self, test_db, monkeypatch):
+        """Test DELETE /preferences/{key} returns 500 when service fails."""
+        from backend.src.services.preferences_service import PreferencesService
+
+        def mock_reset_preference(self, key):
+            raise RuntimeError("simulated delete failure")
+
+        monkeypatch.setattr(PreferencesService, "reset_preference", mock_reset_preference)
+
+        response = client.delete("/api/v1/preferences/theme")
+
+        assert response.status_code == 500
+        data = response.json()
+        assert data["detail"]["error"] == "Failed to delete preference"
+        assert "simulated delete failure" in data["detail"]["details"]
+
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
