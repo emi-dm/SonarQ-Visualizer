@@ -12,6 +12,7 @@ const appState = {
   projectPage: 1,
   projectPageSize: 20,
   totalProjectPages: 1,
+  dashboardCharts: {},
   virtualScrollHandler: null,
   virtualItemHeight: 190
 };
@@ -951,6 +952,8 @@ function renderDashboardCharts(projects) {
   if (!projects || projects.length === 0) {
     return;
   }
+
+  appState.dashboardCharts = {};
   
   // Wait for Chart.js to be available
   if (typeof Chart === 'undefined') {
@@ -975,7 +978,7 @@ function renderDashboardCharts(projects) {
   
   // Render project comparison chart
   if (typeof renderProjectComparisonChart === 'function') {
-    renderProjectComparisonChart('dashboard-comparison-chart', projectsWithMetrics, {
+    appState.dashboardCharts.comparison = renderProjectComparisonChart('dashboard-comparison-chart', projectsWithMetrics, {
       title: 'Project Metrics Comparison'
     });
   }
@@ -990,7 +993,7 @@ function renderDashboardCharts(projects) {
       vulnerabilities_count: 0
     }));
     
-    renderProjectComparisonChart('dashboard-coverage-chart', coverageData, {
+    appState.dashboardCharts.coverage = renderProjectComparisonChart('dashboard-coverage-chart', coverageData, {
       title: 'Code Coverage by Project'
     });
   }
@@ -1010,7 +1013,7 @@ function renderDashboardCharts(projects) {
       }
     });
     
-    renderSeverityPieChart('dashboard-quality-gate-chart', qgCounts, {
+    appState.dashboardCharts.qualityGate = renderSeverityPieChart('dashboard-quality-gate-chart', qgCounts, {
       title: 'Quality Gate Status Distribution'
     });
   }

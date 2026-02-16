@@ -26,7 +26,8 @@ import time
 
 logger = get_logger(__name__)
 router = APIRouter(prefix=CONNECTIONS_PATH, tags=["projects"])
-projects_router = APIRouter(prefix=PROJECTS_PATH, tags=["projects"])  # Direct project endpoints
+projects_router = APIRouter(prefix=PROJECTS_PATH, tags=[
+                            "projects"])  # Direct project endpoints
 
 
 class ProjectResponse(BaseModel):
@@ -34,8 +35,8 @@ class ProjectResponse(BaseModel):
     connection_id: int
     project_key: str
     name: str
-    description: Optional[str] = None
-    last_analysis_date: Optional[datetime] = None
+    description: Optional[str] = Field(default=None)
+    last_analysis_date: Optional[datetime] = Field(default=None)
     created_at: datetime
     updated_at: datetime
 
@@ -115,7 +116,8 @@ async def list_projects(
 
     try:
         service = ProjectService(db)
-        projects, pagination = service.list_projects(connection_id, include_metrics, page, page_size)
+        projects, pagination = service.list_projects(
+            connection_id, include_metrics, page, page_size)
 
         response_projects = []
         for entry in projects:
@@ -125,14 +127,17 @@ async def list_projects(
                 branches = entry.get("branches") or []
                 response_projects.append(ProjectDetailedResponse(
                     **ProjectResponse.from_orm(project).dict(),
-                    latest_metrics=MetricsSnapshotResponse.from_orm(latest) if latest else None,
+                    latest_metrics=MetricsSnapshotResponse.from_orm(
+                        latest) if latest else None,
                     branches=branches
                 ))
             else:
-                response_projects.append(ProjectDetailedResponse(**ProjectResponse.from_orm(entry).dict()))
+                response_projects.append(ProjectDetailedResponse(
+                    **ProjectResponse.from_orm(entry).dict()))
 
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects", "GET", duration_ms, 200)
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects", "GET", duration_ms, 200)
 
         return ProjectListResponse(
             projects=response_projects,
@@ -141,7 +146,8 @@ async def list_projects(
 
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects", "GET", duration_ms, 404, str(e))
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects", "GET", duration_ms, 404, str(e))
         return build_error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", e.message, e.details)
 
 
@@ -155,15 +161,18 @@ async def sync_projects(
 
     try:
         service = ProjectService(db)
-        result = service.sync_projects_from_sonarqube(connection_id, payload.token)
+        result = service.sync_projects_from_sonarqube(
+            connection_id, payload.token)
 
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 200)
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 200)
         return result
 
     except PartialSyncError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 409, str(e))
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 409, str(e))
         return build_error_response(
             status.HTTP_409_CONFLICT,
             "PARTIAL_SYNC_FAILURE",
@@ -177,12 +186,15 @@ async def sync_projects(
         )
     except (AuthenticationError, TokenExpiredError) as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 401, str(e))
-        error_code = "TOKEN_EXPIRED" if isinstance(e, TokenExpiredError) else "AUTHENTICATION_FAILED"
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 401, str(e))
+        error_code = "TOKEN_EXPIRED" if isinstance(
+            e, TokenExpiredError) else "AUTHENTICATION_FAILED"
         return build_error_response(status.HTTP_401_UNAUTHORIZED, error_code, e.message, e.details)
     except RateLimitError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 429, str(e))
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 429, str(e))
         return build_error_response(
             status.HTTP_429_TOO_MANY_REQUESTS,
             "RATE_LIMIT_EXCEEDED",
@@ -191,15 +203,18 @@ async def sync_projects(
         )
     except ValidationError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 400, str(e))
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 400, str(e))
         return build_error_response(status.HTTP_400_BAD_REQUEST, "VALIDATION_ERROR", e.message, e.details)
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 404, str(e))
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 404, str(e))
         return build_error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", e.message, e.details)
     except (ConnectionError, InvalidAPIResponseError) as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 503, str(e))
+        log_api_call(
+            logger, f"/connections/{connection_id}/projects/sync", "POST", duration_ms, 503, str(e))
         return build_error_response(status.HTTP_503_SERVICE_UNAVAILABLE, "CONNECTION_FAILED", e.message, e.details)
 
 
@@ -220,17 +235,20 @@ async def get_project(
         branches = result.get("branches") or []
 
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/projects/{project_id}", "GET", duration_ms, 200)
+        log_api_call(
+            logger, f"/projects/{project_id}", "GET", duration_ms, 200)
 
         return ProjectDetailedResponse(
             **ProjectResponse.from_orm(project).dict(),
-            latest_metrics=MetricsSnapshotResponse.from_orm(latest_metrics) if latest_metrics else None,
+            latest_metrics=MetricsSnapshotResponse.from_orm(
+                latest_metrics) if latest_metrics else None,
             branches=branches
         )
 
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/projects/{project_id}", "GET", duration_ms, 404, str(e))
+        log_api_call(
+            logger, f"/projects/{project_id}", "GET", duration_ms, 404, str(e))
         return build_error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", e.message, e.details)
 
 
@@ -246,11 +264,13 @@ async def list_branches(
         branches = service.get_project_branches(project_id)
 
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/projects/{project_id}/branches", "GET", duration_ms, 200)
+        log_api_call(
+            logger, f"/projects/{project_id}/branches", "GET", duration_ms, 200)
 
         return branches
 
     except NotFoundError as e:
         duration_ms = (time.time() - start_time) * 1000
-        log_api_call(logger, f"/projects/{project_id}/branches", "GET", duration_ms, 404, str(e))
+        log_api_call(
+            logger, f"/projects/{project_id}/branches", "GET", duration_ms, 404, str(e))
         return build_error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", e.message, e.details)
